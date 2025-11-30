@@ -11,7 +11,7 @@
        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* STILI PER CALENDARIO ORIZZONTALE */
+/* STILI PER CALENDARIO ORIZZONTALE */
         #calendar-container {
             overflow-x: auto; /* Permette lo scroll laterale */
             white-space: nowrap; /* I giorni restano in riga */
@@ -31,24 +31,36 @@
             vertical-align: top;
             background-color: white;
             box-sizing: border-box; 
-            font-size: initial; /* Ripristina la dimensione del font per il contenuto */
+            font-size: initial; 
+            position: relative; /* <--- MODIFICA CHIAVE: ESSENZIALE PER LA BARRA ESTESA */
         }
 
         /* Rimuove il bordo destro sull'ultima colonna */
         .day-column:last-child {
             border-right: none;
         }
+
+        /* Nuovo contenitore per le barre di prenotazione */
+        .reservation-container {
+            position: relative;
+            width: 100%;
+            padding: 0; 
+            margin-bottom: 4px;
+            height: 25px; /* Diamo un'altezza fissa al contenitore */
+        }
         
-        /* Prenotazione */
+        /* Prenotazione (la barra che si estende) */
         .reservation {
             font-size: 11px;
             padding: 4px 6px;
-            margin-bottom: 4px;
+            margin-bottom: 0; /* Rimuove margine inferiore */
             border-radius: 6px;
-            white-space: normal; /* Testo a capo */
+            white-space: nowrap; /* Non deve andare a capo */
             overflow: hidden;
             cursor: help;
             border: 1px solid rgba(0,0,0,0.05);
+            left: 0; 
+            position: absolute; /* <--- MODIFICA CHIAVE: Permette l'estensione */
         }
         
         .day-label {
@@ -67,7 +79,6 @@
             margin-bottom: 8px;
             color: #1f2937;
         }
-    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -474,6 +485,7 @@
     </script>
 </body>
 </html>
+
 
 
 
