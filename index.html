@@ -193,7 +193,7 @@
         const loginFormEl = document.getElementById('login-form');
         const registerFormEl = document.getElementById('register-form');
         
-        // --- FUNZIONI DI UTILITY ---
+// --- FUNZIONI DI UTILITY ---
         window.showModal = (title, message) => {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-content').textContent = message;
@@ -203,6 +203,86 @@
         window.closeModal = () => {
             document.getElementById('modal').classList.add('hidden');
             document.getElementById('modal').classList.remove('flex');
+        };
+
+        // --- FUNZIONI AUTH MODAL ---
+        window.toggleAuthModal = () => {
+            if (authModalEl.classList.contains('hidden')) {
+                authModalEl.classList.remove('hidden');
+                authModalEl.classList.add('flex');
+                authStatusEl.textContent = ''; // Resetta lo stato del messaggio
+                document.getElementById('auth-email').value = '';
+                document.getElementById('auth-password').value = '';
+            } else {
+                authModalEl.classList.add('hidden');
+                authModalEl.classList.remove('flex');
+            }
+        };
+
+        window.toggleAuthForm = (showLogin) => {
+            if (showLogin) {
+                loginFormEl.classList.remove('hidden');
+                registerFormEl.classList.add('hidden');
+            } else {
+                loginFormEl.classList.add('hidden');
+                registerFormEl.classList.remove('hidden');
+            }
+            authStatusEl.textContent = '';
+        };
+
+        // --- LOGICA DI AUTENTICAZIONE EMAIL/PASSWORD ---
+
+        window.handleSignIn = async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            authStatusEl.textContent = 'Accesso in corso...';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                authStatusEl.textContent = 'Accesso riuscito!';
+                window.toggleAuthModal();
+            } catch (error) {
+                authStatusEl.textContent = `Errore accesso: ${error.message}`;
+                console.error("Errore di accesso:", error);
+            }
+        };
+
+        window.handleRegister = async () => {
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            authStatusEl.textContent = 'Registrazione in corso...';
+            
+            try {
+                // 1. Crea l'utente Email/Password
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                
+                // 2. Collega l'utente anonimo esistente a questo nuovo account
+                if (auth.currentUser && auth.currentUser.isAnonymous) {
+                    const anonUser = auth.currentUser;
+                    const credential = EmailAuthProvider.credential(email, password);
+                    
+                    // Linka l'account anonimo al nuovo account permanente
+                    await linkWithCredential(anonUser, credential);
+                    
+                    // La funzione onAuthStateChanged si occuperà di ricaricare i dati e aggiornare l'UI
+                    authStatusEl.textContent = 'Registrazione e migrazione dati riuscita!';
+                }
+                
+                window.toggleAuthModal();
+
+            } catch (error) {
+                authStatusEl.textContent = `Errore registrazione: ${error.message}`;
+                console.error("Errore di registrazione:", error);
+            }
+        };
+        
+        window.handleSignOut = async () => {
+            try {
+                await signOut(auth);
+                // Dopo il logout, onAuthStateChanged gestirà il re-login anonimo
+            } catch (error) {
+                console.error("Errore durante il logout:", error);
+            }
         };
         http://googleusercontent.com/immersive_entry_chip/1
         // --- PARSING ICAL ---
@@ -422,6 +502,7 @@
     </script>
 </body>
 </html>
+
 
 
 
