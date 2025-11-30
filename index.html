@@ -7,18 +7,18 @@
     <!-- Caricamento di Tailwind CSS per lo styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Utilizzo del font Inter -->
-    <style>
+<style>
        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* STILI PER CALENDARIO ORIZZONTALE */
+/* STILI PER CALENDARIO ORIZZONTALE */
         #calendar-container {
             overflow-x: auto; /* Permette lo scroll laterale */
             white-space: nowrap; /* I giorni restano in riga */
             border: 1px solid #e5e7eb;
             border-radius: 0.75rem;
-            padding-bottom: 8px;
             background-color: #f9fafb;
+            font-size: 0; /* Rimuove lo spazio tra gli inline-block */
         }
 
         /* Colonna del singolo giorno */
@@ -31,18 +31,36 @@
             vertical-align: top;
             background-color: white;
             box-sizing: border-box; 
+            font-size: initial; 
+            position: relative; /* CRUCIALE per le barre estese */
+        }
+
+        /* Rimuove il bordo destro sull'ultima colonna */
+        .day-column:last-child {
+            border-right: none;
+        }
+
+        /* Nuovo contenitore per le barre di prenotazione */
+        .reservation-container {
+            position: relative;
+            width: 100%;
+            padding: 0; 
+            margin-bottom: 4px;
+            height: 25px; /* Diamo un'altezza fissa al contenitore */
         }
         
-        /* Prenotazione */
+        /* Prenotazione (la barra che si estende) */
         .reservation {
             font-size: 11px;
             padding: 4px 6px;
-            margin-bottom: 4px;
+            margin-bottom: 0; 
             border-radius: 6px;
-            white-space: normal; /* Testo a capo */
+            white-space: nowrap; 
             overflow: hidden;
             cursor: help;
             border: 1px solid rgba(0,0,0,0.05);
+            left: 0; 
+            position: absolute; /* Permette l'estensione orizzontale */
         }
         
         .day-label {
@@ -61,14 +79,18 @@
             margin-bottom: 8px;
             color: #1f2937;
         }
-    </style>
+</style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
     <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <header class="bg-white shadow-lg rounded-xl p-4 mb-6">
-            <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
-            <p id="user-info" class="text-sm text-gray-500 mt-1">Caricamento...</p>
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-6 flex justify-between items-center">
+        <div>
+        <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
+        <p id="user-info" class="text-sm text-gray-500 mt-1">Stato: Autenticazione in corso...</p>
+        </div>
+        <div id="auth-buttons">
+        </div>
         </header>
 
         <!-- Sezione Inserimento URL iCal -->
@@ -398,6 +420,7 @@
     </script>
 </body>
 </html>
+
 
 
 
