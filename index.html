@@ -348,10 +348,10 @@
         };
 
         // FUNZIONE renderCalendar AGGIORNATA PER BARRE ESTESE
-    const renderCalendar = () => {
+const renderCalendar = () => {
     const gridEl = document.getElementById('calendar-grid');
     gridEl.innerHTML = '';
-    gridEl.style.display = 'flex'; 
+    gridEl.style.display = 'flex'; // Importante per orizzontale
 
     // Titolo periodo
     const endPeriod = new Date(currentStartDate);
@@ -362,58 +362,66 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Mappa per associare il timestamp del giorno alla sua posizione (indice)
     const daysMap = new Map();
-    // 1. Generazione Giorni (Corretto)
+
+    // --- 1. Genera i contenitori dei giorni (colonne) ---
     for (let i = 0; i < VIEW_DAYS; i++) {
         const date = new Date(currentStartDate);
         date.setDate(date.getDate() + i);
 
+        // Mappa ogni timestamp del giorno all'indice del giorno (i)
         daysMap.set(date.getTime(), i); 
 
         const isToday = date.getTime() === today.getTime();
         const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
 
         const col = document.createElement('div');
+        // Aggiungiamo la classe 'is-today' per l'highlight
         col.className = `day-column ${isToday ? 'bg-blue-50 is-today' : ''}`;
 
         col.innerHTML = `
             <div class="day-label">${dayName}</div>
             <div class="day-number">${date.getDate()}</div>
-            <hr class="border-gray-200 mt-1 mb-2">
+            <hr class="my-2">
             <div class="reservation-container" id="res-container-${date.getTime()}">
                 </div>
         `;
 
         gridEl.appendChild(col);
-    } 
+    } // Chiudi il ciclo dei giorni
 
 
-    // --- 2. Logica di Disegno (Livellamento Fisso) ---
+    // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese, Livellamento Fisso e Tooltip) ---
     
+    // 1. CREA UNA MAPPA DEI LIVELLI FISSI PER OGNI NOME DI APPARTAMENTO/CALENDARIO
     const calendarLaneMap = new Map();
-    let currentLaneIndex = 0; // Inizia sempre da 0
+    let currentLaneIndex = 0;
 
+    // Ordina le prenotazioni per la data di inizio (importante per la visualizzazione)
     allReservations.sort((a, b) => a.start - b.start);
 
     allReservations.forEach(res => {
         const startTime = res.start.getTime();
         const endTime = res.end.getTime();
 
-        // --- ASSEGNAZIONE DEL LIVELLO FISSO PER NOME APPARTAMENTO ---
+        // --- Determina il Livello Fisso (Lane) ---
         let lane;
         if (calendarLaneMap.has(res.apartmentName)) {
             lane = calendarLaneMap.get(res.apartmentName);
         } else {
+            // Assegna un nuovo livello consecutivo per ogni nuovo calendario iCal
             lane = currentLaneIndex;
             calendarLaneMap.set(res.apartmentName, lane);
-            currentLaneIndex++; // Incrementa solo quando troviamo un NUOVO calendario
+            currentLaneIndex++;
         }
-        // ----------------------------------------------------
+        // --- Fine Logica Livello Fisso ---
 
+        // Controlla se la prenotazione è visibile nel periodo di 45 giorni
         if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
             
             let startIndex = daysMap.get(startTime);
-            let checkoutIndex = daysMap.get(endTime); 
+            let checkoutIndex = daysMap.get(endTime); // Indice del giorno di check-out
 
             if (startIndex === undefined) startIndex = 0;
             
@@ -424,6 +432,8 @@
 
             const durationDays = endIndex - startIndex + 1;
             
+            // --- Inserimento del Blocco nel Primo Giorno Visibile ---
+            
             const dateOfFirstVisibleDay = new Date(currentStartDate);
             dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
             const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
@@ -432,13 +442,17 @@
                 const div = document.createElement('div');
                 
                 const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+                // Assegna il colore in base al livello fisso del calendario
                 const colorClass = colors[lane % colors.length];
 
                 const columnWidth = 140; 
                 const totalWidth = (columnWidth * durationDays) - 1; 
 
+                // Calcola la data di checkout reale (Fine + 1 giorno) per il tooltip
                 const checkoutDate = new Date(res.end.getTime()); 
                 checkoutDate.setDate(checkoutDate.getDate() + 1);
+
+                // 📝 TOOLTIP: Crea il testo dettagliato
                 const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
 
                 div.style.width = `${totalWidth}px`;
@@ -446,26 +460,28 @@
                 div.style.zIndex = 10 + lane; 
                 div.style.marginLeft = `0px`; 
                 
-                // --- POSIZIONAMENTO VERTICALE FISSO ---
-                const HEADER_OFFSET = 50; 
-                div.style.top = `${HEADER_OFFSET + (lane * 10)}px`;
+                // LIVELLAMENTO FISSO: Applica il posizionamento verticale (28px per livello)
+                const HEADER_OFFSET = 90; // Spazio occupato dall'intestazione del giorno
+                div.style.top = `${HEADER_OFFSET + (lane * 28)}px`;
                 
                 div.className = `reservation text-white font-semibold ${colorClass} text-center`;
                 div.textContent = res.apartmentName;
-                div.title = tooltipText; 
+                div.title = tooltipText; // Assegna il testo dettagliato al tooltip
                 
                 resContainer.appendChild(div);
             }
         }
     });
 
-    // --- 3. FORZATURA ALTEZZA SUL CONTENITORE PRINCIPALE ---
-    const BASE_HEIGHT = 30; 
-    const LANE_HEIGHT = 40; 
-    const minRequiredHeight = BASE_HEIGHT + (currentLaneIndex * LANE_HEIGHT); 
+    // --- 3. Forzare l'altezza delle colonne (Metodo Semplice e Pulito) ---
+    // Calcola l'altezza minima necessaria basata sul numero totale di righe (lane)
+    const BASE_HEIGHT = 90; // Altezza intestazione
+    const LANE_HEIGHT = 28; // Altezza per riga
+    const minRequiredHeight = BASE_HEIGHT + (currentLaneIndex * LANE_HEIGHT) + 20; // 20px di padding finale
 
-    // Forziamo l'altezza sul contenitore Flexbox principale
+    // Imposta il min-height direttamente sul contenitore principale del calendario (gridEl).
     gridEl.style.minHeight = `${minRequiredHeight}px`;
+
 };
         // --- LOGICA AUTENTICAZIONE UTENTE ---
         window.signInWithGoogle = async () => {
@@ -559,6 +575,7 @@
 </html>
 </body>
 </html>
+
 
 
 
