@@ -345,7 +345,6 @@
 
             const today = new Date(); 
             today.setHours(0,0,0,0);
-
             // Genera giorni
             for (let i = 0; i < VIEW_DAYS; i++) {
                 const date = new Date(currentStartDate);
@@ -355,29 +354,38 @@
                 const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
                 
                 const col = document.createElement('div');
-                col.className = `day-column ${isToday ? 'bg-blue-50 border-t-4 border-blue-500' : ''}`;
+                // Rimuoviamo il border-top-4 qui per evitare che interferisca col posizionamento assoluto
+                col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`; 
                 
                 col.innerHTML = `
                     <div class="day-label">${dayName}</div>
                     <div class="day-number">${date.getDate()}</div>
                     <hr class="my-2">
-                `;
+                    <div class="reservation-container" id="res-container-${date.getTime()}">
+                        </div>
+                        <div class="reservation-container" id="res-container-${date.getTime()}"></div>
+                `; // La chiusura dell'innerHtml
 
-                // Cerca prenotazioni per questo giorno
-                allReservations.forEach(res => {
-                    if (date >= res.start && date <= res.end) {
-                        const div = document.createElement('div');
-                        // Colori casuali basati sul nome
-                        const colors = ['bg-red-100 text-red-800', 'bg-green-100 text-green-800', 'bg-blue-100 text-blue-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800'];
-                        const colorClass = colors[res.apartmentName.length % colors.length];
-                        
-                        div.className = `reservation ${colorClass}`;
-                        div.textContent = res.apartmentName;
-                        div.title = res.summary;
-                        col.appendChild(div);
-                    }
-                });
-                
+                gridEl.appendChild(col); // <-- AGGIUNGI QUESTO
+            } // Chiudi il ciclo dei giorni
+                `;
+            // ... [qui finisce il codice del ciclo for modificato] ...
+            
+            // --- Logica di Disegno delle Prenotazioni Unificate ---
+            const daysMap = new Map();
+            for (let i = 0; i < VIEW_DAYS; i++) {
+                const date = new Date(currentStartDate);
+                date.setDate(date.getDate() + i);
+                // Mappa ogni timestamp del giorno all'indice del giorno (i)
+                daysMap.set(date.getTime(), i); 
+            }
+
+            allReservations.forEach(res => {
+                // ... [tutto il codice per calcolare totalWidth e inserire il div] ...
+            });
+            // --- Fine Logica di Disegno Unificato ---
+                gridEl.appendChild(col);
+            }               
                 gridEl.appendChild(col);
             }
         };
@@ -466,6 +474,7 @@
     </script>
 </body>
 </html>
+
 
 
 
