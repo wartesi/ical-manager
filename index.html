@@ -375,23 +375,81 @@
                 gridEl.appendChild(col);
             }
         };
+// --- LOGICA AUTENTICAZIONE UTENTE ---
+        window.signInWithGoogle = async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Errore di Login con Google:", error);
+                showModal("Errore di Login", "Non è stato possibile accedere con Google. Riprova.");
+            }
+        };
 
-        // --- INIT ---
+        window.logOut = async () => {
+            try {
+                await signOut(auth);
+                icalUrls = []; // Svuota i dati dell'utente precedente
+                allReservations = [];
+                renderCalendar(); // Aggiorna per mostrare il calendario vuoto
+            } catch (error) {
+                console.error("Errore di Logout:", error);
+            }
+        };
+        
+        const renderAuthButton = (user) => {
+            const authButtonsEl = document.getElementById('auth-buttons');
+            authButtonsEl.innerHTML = '';
+            
+            if (user && !user.isAnonymous) {
+                // Utente Loggato
+                authButtonsEl.innerHTML = `
+                    <button onclick="logOut()"
+                            class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-150 shadow-md whitespace-nowrap">
+                        Logout
+                    </button>
+                `;
+                document.getElementById('user-info').textContent = `Utente: ${user.email || 'Connesso'}`;
+            } else {
+                // Utente Sconnesso (o Anonimo)
+                authButtonsEl.innerHTML = `
+                    <button onclick="signInWithGoogle()"
+                            class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md whitespace-nowrap">
+                        Login / Registrati
+                    </button>
+                `;
+                document.getElementById('user-info').textContent = "Stato: Non Autenticato";
+            }
+        };
+// --- INIT ---
         const initFirebase = async () => {
             if(firebaseConfig.projectId) {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
-                else await signInAnonymously(auth);
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    // Non usiamo più signInAnonymously di default
+                    // renderAuthButton(null) verrà chiamato da onAuthStateChanged
+                }
                 
                 onAuthStateChanged(auth, u => {
+                    userId = null; // Resetta l'ID
                     if(u) {
                         userId = u.uid;
-                        document.getElementById('user-info').textContent = "Utente Connesso";
-                        loadIcalUrls();
+                        // Solo se non è anonimo carichiamo i dati
+                        if (!u.isAnonymous) {
+                            loadIcalUrls();
+                        } else {
+                            // Se è anonimo, mostriamo solo il pulsante di login
+                            icalListEl.innerHTML = '<p class="text-sm text-gray-500">Per salvare i calendari, esegui il Login/Registrazione.</p>';
+                            document.getElementById('url-count').textContent = '0';
+                            document.getElementById('loading-urls').style.display = 'none';
+                        }
                     }
+                    renderAuthButton(u); // Aggiorna UI
                 });
             }
             // Renderizza calendario vuoto all'inizio
@@ -402,6 +460,7 @@
     </script>
 </body>
 </html>
+
 
 
 
