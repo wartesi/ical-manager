@@ -8,20 +8,58 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Utilizzo del font Inter -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .calendar-day {
-            min-height: 80px;
+        
+        /* STILI PER CALENDARIO ORIZZONTALE */
+        #calendar-container {
+            overflow-x: auto; /* Permette lo scroll laterale */
+            white-space: nowrap; /* I giorni restano in riga */
             border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding-bottom: 8px;
+            background-color: #f9fafb;
         }
+
+        /* Colonna del singolo giorno */
+        .day-column {
+            display: inline-block;
+            width: 140px; /* Larghezza fissa */
+            min-height: 140px;
+            border-right: 1px solid #e5e7eb;
+            padding: 10px;
+            vertical-align: top;
+            background-color: white;
+            box-sizing: border-box; 
+        }
+        
+        /* Prenotazione */
         .reservation {
-            font-size: 10px;
-            padding: 2px 4px;
-            margin-bottom: 2px;
-            border-radius: 4px;
-            white-space: nowrap;
+            font-size: 11px;
+            padding: 4px 6px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            white-space: normal; /* Testo a capo */
             overflow: hidden;
-            text-overflow: ellipsis;
+            cursor: help;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .day-label {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-align: center;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+        
+        .day-number {
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 8px;
+            color: #1f2937;
         }
     </style>
 </head>
@@ -62,28 +100,27 @@
             </button>
         </section>
 
-        <!-- Sezione Visualizzazione Calendario -->
+       <!-- Sezione Visualizzazione Calendario Orizzontale -->
         <section class="bg-white shadow-lg rounded-xl p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Visualizzazione Prenotazioni</h2>
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Visualizzazione Prenotazioni (Orizzontale)</h2>
 
-            <!-- Navigazione Mese -->
+            <!-- Navigazione Mese/Giorni -->
             <div class="flex justify-between items-center mb-4">
-                <button onclick="changeMonth(-1)" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+                <button onclick="changePeriod(-1)" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
                     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
-                <span id="current-month" class="text-2xl font-bold text-gray-800"></span>
-                <button onclick="changeMonth(1)" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+                <span id="current-period" class="text-xl font-bold text-gray-800"></span>
+                <button onclick="changePeriod(1)" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
                     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
             </div>
 
-            <!-- Griglia Calendario -->
-            <div class="grid grid-cols-7 text-center font-medium text-sm text-gray-600 mb-2">
-                <div>Dom</div><div>Lun</div><div>Mar</div><div>Mer</div><div>Gio</div><div>Ven</div><div>Sab</div>
-            </div>
-            <div id="calendar-grid" class="grid grid-cols-7">
-                <!-- Le celle del calendario saranno generate qui -->
-                <p class="col-span-7 text-center py-8 text-gray-500" id="calendar-placeholder">Premi "Sincronizza" per caricare le prenotazioni.</p>
+            <!-- Contenitore del Calendario Orizzontale Scrollabile -->
+            <div id="calendar-container">
+                <div id="calendar-grid">
+                    <!-- Le colonne dei giorni saranno generate qui -->
+                    <p class="col-span-7 text-center py-8 text-gray-500" id="calendar-placeholder">Premi "Sincronizza" per caricare le prenotazioni.</p>
+                </div>
             </div>
         </section>
 
@@ -560,4 +597,5 @@ for (const ical of icalUrls) {
     </script>
 </body>
 </html>
+
 
