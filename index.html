@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestore Calendari iCal Airbnb</title>
-    <!-- Caricamento di Tailwind CSS per lo styling -->
+    <title>Gestore Calendari iCal Affitti Brevi</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Utilizzo del font Inter -->
-<style>
+    <style>
        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
@@ -33,6 +31,9 @@
             box-sizing: border-box; 
             font-size: initial; 
             position: relative; /* CRUCIALE per le barre estese */
+            /* MODIFICHE PER SOVRAPPOSIZIONE */
+            height: auto; /* Permette l'espansione in altezza */
+            overflow: visible; /* Permette al contenuto assoluto di espandersi */
         }
 
         /* Rimuove il bordo destro sull'ultima colonna */
@@ -45,8 +46,9 @@
             position: relative;
             width: 100%;
             padding: 0; 
-            margin-bottom: 4px;
-            height: 25px; /* Diamo un'altezza fissa al contenitore */
+            /* MODIFICHE PER SOVRAPPOSIZIONE */
+            margin-bottom: 0;
+            height: 0; /* Altezza zero, sarà controllata dalle barre assolute */
         }
         
         /* Prenotazione (la barra che si estende) */
@@ -79,21 +81,29 @@
             margin-bottom: 8px;
             color: #1f2937;
         }
+
+        /* Stile per il giorno corrente */
+        .is-today {
+            border-top: 4px solid #4f46e5; /* Bordo blu indaco audace */
+        }
+        /* Assicurati che il bordo del giorno non interferisca con il bordo superiore "oggi" */
+        .is-today .day-number, .is-today .day-label {
+            padding-top: 0; 
+        }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
     <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
         <header class="bg-white shadow-lg rounded-xl p-4 mb-6 flex justify-between items-center">
-        <div>
-        <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
-        <p id="user-info" class="text-sm text-gray-500 mt-1">Stato: Autenticazione in corso...</p>
-        </div>
-        <div id="auth-buttons">
-        </div>
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
+                <p id="user-info" class="text-sm text-gray-500 mt-1">Stato: Autenticazione in corso...</p>
+            </div>
+            <div id="auth-buttons">
+            </div>
         </header>
 
-        <!-- Sezione Inserimento URL iCal -->
         <section class="bg-white shadow-lg rounded-xl p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Aggiungi Calendario iCal</h2>
             <div class="flex flex-col sm:flex-row gap-4 mb-4">
@@ -109,11 +119,9 @@
             <p class="text-xs text-red-600" id="error-message" style="display: none;"></p>
         </section>
 
-        <!-- Sezione URL Salvati e Sincronizzazione -->
         <section class="bg-white shadow-lg rounded-xl p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">I Miei Calendari Salvati (<span id="url-count">0</span>)</h2>
             <div id="ical-list" class="space-y-3">
-                <!-- URL iCal salvati saranno iniettati qui -->
                 <p class="text-sm text-gray-500" id="loading-urls">Caricamento URL salvati...</p>
             </div>
             <button onclick="loadCalendar()" id="sync-button"
@@ -122,11 +130,9 @@
             </button>
         </section>
 
-       <!-- Sezione Visualizzazione Calendario Orizzontale -->
-        <section class="bg-white shadow-lg rounded-xl p-6">
+       <section class="bg-white shadow-lg rounded-xl p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Visualizzazione Prenotazioni (Orizzontale)</h2>
 
-            <!-- Navigazione Mese/Giorni -->
             <div class="flex justify-between items-center mb-4">
                 <button onclick="changePeriod(-1)" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
                     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
@@ -137,17 +143,14 @@
                 </button>
             </div>
 
-            <!-- Contenitore del Calendario Orizzontale Scrollabile -->
             <div id="calendar-container">
                 <div id="calendar-grid">
-                    <!-- Le colonne dei giorni saranno generate qui -->
                     <p class="col-span-7 text-center py-8 text-gray-500" id="calendar-placeholder">Premi "Sincronizza" per caricare le prenotazioni.</p>
                 </div>
             </div>
         </section>
 
-         <!-- Modal di Avviso (Personalizzato) -->
-        <div id="modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center p-4 z-50">
+         <div id="modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center p-4 z-50">
             <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full">
                 <h3 class="text-lg font-bold text-red-600 mb-3" id="modal-title"></h3>
                 <p class="text-sm text-gray-700 mb-4" id="modal-content"></p>
@@ -156,8 +159,7 @@
         </div>
     </div>
 
-    <!-- Firebase Imports e Logica -->
-<script type="module">
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         // IMPORT CORRETTO: Aggiunge GoogleAuthProvider, signInWithPopup, signOut
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -345,7 +347,7 @@
             renderCalendar();
         };
 
-        // FUNZIONE renderCalendar AGGIORNATA PER BARRE ESTESE
+        // FUNZIONE renderCalendar AGGIORNATA PER BARRE ESTESE, LIVELLAMENTO E TOOLTIP
         const renderCalendar = () => {
             const gridEl = document.getElementById('calendar-grid');
             gridEl.innerHTML = '';
@@ -375,7 +377,8 @@
                 const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
 
                 const col = document.createElement('div');
-                col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
+                // Aggiungiamo la classe 'is-today' per l'highlight
+                col.className = `day-column ${isToday ? 'bg-blue-50 is-today' : ''}`;
 
                 col.innerHTML = `
                     <div class="day-label">${dayName}</div>
@@ -389,7 +392,13 @@
             } // Chiudi il ciclo dei giorni
 
 
-            // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese) ---
+            // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese, Livellamento e Tooltip) ---
+            
+            // Mappa per tenere traccia di quale "livello" è occupato per ogni giorno nel periodo
+            const laneMap = new Array(VIEW_DAYS).fill(0); // Inizializza tutti i giorni a livello 0
+
+            // Ordina le prenotazioni per la data di inizio per garantire che le collisioni siano gestite in ordine
+            allReservations.sort((a, b) => a.start - b.start);
 
             allReservations.forEach(res => {
                 const startTime = res.start.getTime();
@@ -398,59 +407,69 @@
                 // Controlla se la prenotazione è visibile nel periodo di 45 giorni
                 if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
                     
-                    // Trova il giorno di inizio visibile e l'indice del giorno di FINE REALE (check-out - 1 giorno)
                     let startIndex = daysMap.get(startTime);
                     let checkoutIndex = daysMap.get(endTime); // Indice del giorno di check-out
 
-                    // Se l'inizio non è nel periodo, inizia dal primo giorno (indice 0)
-                    if (startIndex === undefined) { 
-                        startIndex = 0;
-                    }
-
-                    // Se la fine non è nel periodo, la barra deve arrivare fino all'ultimo giorno visibile
-                    let endIndex = VIEW_DAYS - 1; // Default: va fino alla fine del periodo
-
-                    if (checkoutIndex !== undefined) {
-                        // Se il checkout è visibile, la fine è il giorno prima del checkout
-                        endIndex = checkoutIndex - 1; 
-                    }
+                    if (startIndex === undefined) startIndex = 0;
                     
-                    // Se la prenotazione è finita prima dell'inizio del periodo, salta
-                    if (endIndex < startIndex && checkoutIndex !== undefined && checkoutIndex <= startIndex) {
-                         return;
-                    }
+                    let endIndex = VIEW_DAYS - 1; 
+                    if (checkoutIndex !== undefined) endIndex = checkoutIndex - 1; 
+                    
+                    if (endIndex < startIndex) return;
 
-                    // Calcola la durata (in numero di giorni/colonne)
                     const durationDays = endIndex - startIndex + 1;
                     
-                    // --- Inserimento del Blocco nel Primo Giorno Visibile ---
+                    // --- Determina il Livello (Lane) Disponibile ---
+                    let lane = 0;
+                    // Trova il primo livello (lane) libero in tutto il range della prenotazione
+                    for (lane = 0; ; lane++) {
+                        let isLaneFree = true;
+                        for (let d = startIndex; d <= endIndex; d++) {
+                            if (laneMap[d] > lane) {
+                                isLaneFree = false;
+                                break;
+                            }
+                        }
+                        if (isLaneFree) break;
+                    }
                     
-                    // Troviamo il contenitore del giorno in cui la prenotazione inizia *visibilmente*
+                    // Segna il livello come occupato per tutti i giorni della prenotazione
+                    for (let d = startIndex; d <= endIndex; d++) {
+                        laneMap[d] = lane + 1;
+                    }
+                    // --- Fine Logica Livello ---
+
                     const dateOfFirstVisibleDay = new Date(currentStartDate);
                     dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
-                    
-                    // SELEZIONIAMO il contenitore corretto tramite l'ID
                     const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
 
                     if (resContainer) {
                         const div = document.createElement('div');
                         
-                        // Colori casuali basati sul nome
                         const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500'];
                         const colorClass = colors[res.apartmentName.length % colors.length];
 
-                        // Larghezza di una colonna (140px) * numero di giorni
                         const columnWidth = 140; 
-                        const totalWidth = (columnWidth * durationDays) - 1; // -1 per evitare doppio bordo sul confine
+                        const totalWidth = (columnWidth * durationDays) - 1; 
+
+                        // Calcola la data di checkout reale (Fine + 1 giorno) per il tooltip
+                        const checkoutDate = new Date(res.end.getTime()); 
+                        checkoutDate.setDate(checkoutDate.getDate() + 1);
+
+                        // 📝 TOOLTIP: Crea il testo dettagliato
+                        const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
 
                         div.style.width = `${totalWidth}px`;
                         div.style.position = 'absolute'; 
-                        div.style.zIndex = 10;
+                        div.style.zIndex = 10 + lane; 
                         div.style.marginLeft = `0px`; 
+                        
+                        // 🌈 LIVELLAMENTO: Applica il posizionamento verticale (28px per livello)
+                        div.style.top = `${lane * 28}px`; 
                         
                         div.className = `reservation text-white font-semibold ${colorClass} text-center`;
                         div.textContent = res.apartmentName;
-                        div.title = res.summary;
+                        div.title = tooltipText; // Assegna il testo dettagliato al tooltip
                         
                         resContainer.appendChild(div);
                     }
@@ -548,8 +567,7 @@
     </script>
 </body>
 </html>
-</body>
-</html>
+
 
 
 
