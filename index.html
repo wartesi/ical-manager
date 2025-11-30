@@ -475,25 +475,23 @@ gridEl.appendChild(col);
 // Calcola l'altezza minima necessaria basata sul numero totale di righe (lane)
 const BASE_HEIGHT = 90; // Altezza intestazione
 const LANE_HEIGHT = 28; // Altezza per riga
-const minRequiredHeight = BASE_HEIGHT + (currentLaneIndex * LANE_HEIGHT) + 20; // 20px di padding finale
+// Riga 478: const minRequiredHeight = BASE_HEIGHT + (currentLaneIndex * LANE_HEIGHT) + 20; // 20px di padding finale
 
 // Imposta il min-height direttamente sul contenitore principale del calendario (gridEl).
 // Questo è il modo più affidabile per forzare l'espansione del contenitore Flexbox.
 gridEl.style.minHeight = `${minRequiredHeight}px`;
 
-// NON è necessario iterare sui singoli day-column; Flexbox gestisce l'altezza.
+}; // <--- LA PARENTESI GRAFFA DI CHIUSURA DELLA FUNZIONE renderCalendar DEVE ESSERE QUI.
 
-// Riga 493: Fine della funzione renderCalendar
-    // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese, Livellamento Fisso e Tooltip) ---
+// Subito dopo, inizia il blocco LOGICA AUTENTICAZIONE UTENTE, che è la prossima cosa nel tuo file.
     
     // 1. CREA UNA MAPPA DEI LIVELLI FISSI PER OGNI NOME DI APPARTAMENTO/CALENDARIO
     const calendarLaneMap = new Map();
     let currentLaneIndex = 0;
 
     // Ordina le prenotazioni per la data di inizio (importante per la visualizzazione)
-    allReservations.sort((a, b) => a.start - b.start);
-
-    allReservations.forEach(res => {
+        allReservations.sort((a, b) => a.start - b.start);
+        allReservations.forEach(res => {
         const startTime = res.start.getTime();
         const endTime = res.end.getTime();
 
@@ -656,6 +654,7 @@ gridEl.style.minHeight = `${minRequiredHeight}px`;
     </script>
 </body>
 </html>
+
 
 
 
