@@ -158,7 +158,7 @@
         let app, db, auth, userId = null;
         let icalUrls = [];
         let allReservations = [];
-        let isAnon = true; // Nuovo: Traccia se l'utente è anonimo
+        let isAnon = true; // Traccia se l'utente è anonimo
         
         // Impostazioni Calendario Orizzontale
         let currentStartDate = new Date();
@@ -166,7 +166,7 @@
         const VIEW_DAYS = 45; 
         
         const ICAL_COLLECTION = "ical_urls";
-        const ICAL_PROXY_URL = "https://ical-proxy-worker.glitch.me/"; // Proxy CORS (lasciamo Glitch come ultima versione)
+        const ICAL_PROXY_URL = "https://ical-proxy-worker.glitch.me/";
         
         // --- CONFIGURAZIONE FIREBASE ---
         const appId = 'calendario-affitti-brevi'; 
@@ -179,7 +179,7 @@
             appId: "1:338062221076:web:02d734c5a712a26a38ac01",
             measurementId: "G-2EJGFF5RPQ"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initialAuthToken : null; 
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
         
         // Elementi DOM aggiornati per i nuovi pulsanti e modal
         const icalListEl = document.getElementById('ical-list');
@@ -187,7 +187,6 @@
         const authButton = document.getElementById('auth-button'); 
         const logoutButton = document.getElementById('logout-button'); 
         const userInfoEl = document.getElementById('user-info');
-        // I seguenti elementi sono per il nuovo modal, assicurati che il modal sia stato incollato
         const authModalEl = document.getElementById('auth-modal'); 
         const authStatusEl = document.getElementById('auth-status-message'); 
         const loginFormEl = document.getElementById('login-form');
@@ -536,6 +535,7 @@
     </script>
 </body>
 </html>
+
 
 
 
