@@ -92,6 +92,14 @@
         .is-today .day-number, .is-today .day-label {
             padding-top: 0; 
         }
+    /* Stile per il giorno corrente */
+        .is-today {
+            border-top: 4px solid #4f46e5; /* Bordo blu indaco audace */
+        }
+        /* Assicurati che il bordo del giorno non interferisca con il bordo superiore "oggi" */
+        .is-today .day-number, .is-today .day-label {
+            padding-top: 0; 
+        }
 </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -388,7 +396,7 @@
                 const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
 
                 const col = document.createElement('div');
-                col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
+                col.className = `day-column ${isToday ? 'bg-blue-50 is-today' : ''}`;
 
                 col.innerHTML = `
                     <div class="day-label">${dayName}</div>
@@ -571,6 +579,7 @@
 </html>
 </body>
 </html>
+
 
 
 
