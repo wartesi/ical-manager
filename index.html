@@ -272,7 +272,7 @@
         };
 
         // --- LOGICA CALENDARIO ---
-        window.loadCalendar = async () => {
+       window.loadCalendar = async () => {
             if (!userId) return;
             syncButton.textContent = "Caricamento...";
             syncButton.disabled = true;
@@ -281,25 +281,39 @@
             for (const ical of icalUrls) {
                 try {
                     let fetchUrl = ical.url;
-                    // Logica Proxy
+                    
+                    // --- LOGICA PROXY CORRETTA ---
+                    // Controlla se l'URL è https, se è di Airbnb e se non ha già il proxy.
+                    // Se tutte le condizioni sono vere, anteponi il proxy.
                     if (fetchUrl.startsWith('https://') && fetchUrl.includes('airbnb') && !fetchUrl.includes(ICAL_PROXY_URL)) {
                         fetchUrl = ICAL_PROXY_URL + fetchUrl;
                     }
+                    // -----------------------------
+
                     const res = await fetch(fetchUrl);
                     if (!res.ok) throw new Error("Errore rete");
                     const txt = await res.text();
                     allReservations.push(...parseIcalContent(txt, ical.name));
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error(`Errore caricamento ${ical.name}:`, e); 
+                }
             }
             
-            syncButton.textContent = "Sincronizza e Visualizza Calendario";
+            syncButton.textContent = "Sincronizza Ora";
             syncButton.disabled = false;
             
+            // Resetta sempre su oggi dopo il caricamento e aggiorna la vista
+            currentStartDate = new Date();
+            currentStartDate.setHours(0, 0, 0, 0);
+            renderCalendar();
+            
             if (allReservations.length > 0) {
-                renderCalendar();
                 showModal("Successo", `Caricate ${allReservations.length} prenotazioni.`);
             } else {
-                showModal("Attenzione", "Nessuna prenotazione trovata o errore di caricamento.");
+                // Mostra un avviso solo se c'erano calendari da caricare ma nessuna prenotazione trovata (o errore)
+                if (icalUrls.length > 0) {
+                    showModal("Attenzione", "Nessuna prenotazione trovata o errore di caricamento. Controlla la console per i dettagli.");
+                }
             }
         };
 
@@ -384,6 +398,7 @@
     </script>
 </body>
 </html>
+
 
 
 
