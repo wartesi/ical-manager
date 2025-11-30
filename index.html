@@ -455,7 +455,37 @@
                     laneMap[d] = lane + 1;
                 }
                 // --- Fine Logica Livello ---
+                 // Troviamo il contenitore del giorno in cui la prenotazione inizia *visibilmente*
+                 const dateOfFirstVisibleDay = new Date(currentStartDate);
+                 dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
+                 
+                 // SELEZIONIAMO il contenitore corretto tramite l'ID
+                 const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
 
+                 if (resContainer) {
+                     const div = document.createElement('div');
+                     
+                     // [CODICE PER I COLORI E IL CALCOLO DELLA LARGHEZZA QUI DENTRO]
+                     
+                     // ... (omesso il codice per i colori e la larghezza) ...
+
+                     // --- NUOVO CODICE PER IL TOOLTIP E IL LIVELLAMENTO VERTICALE ---
+                     
+                     // Calcola la data di checkout reale (Fine + 1 giorno) per il tooltip
+                     const checkoutDate = new Date(res.end.getTime()); 
+                     checkoutDate.setDate(checkoutDate.getDate() + 1);
+
+                     const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
+                     
+                     // Applica il posizionamento verticale (28px per livello)
+                     div.style.top = `${lane * 28}px`; 
+                     
+                     div.className = `reservation text-white font-semibold ${colorClass} text-center`;
+                     div.textContent = res.apartmentName;
+                     div.title = tooltipText; // <--- ASSEGNAZIONE DEL TOOLTIP
+                     
+                     resContainer.appendChild(div);
+                 }
                 const dateOfFirstVisibleDay = new Date(currentStartDate);
                 dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
                 const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
@@ -579,6 +609,7 @@
 </html>
 </body>
 </html>
+
 
 
 
