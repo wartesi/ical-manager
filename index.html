@@ -66,9 +66,23 @@
 <body class="bg-gray-50 min-h-screen">
 
     <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <header class="bg-white shadow-lg rounded-xl p-4 mb-6">
-            <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
-            <p id="user-info" class="text-sm text-gray-500 mt-1">Caricamento...</p>
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
+                <p class="text-sm text-gray-500 mt-1">Gestione Affitti Brevi (Orizzontale)</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex items-center gap-4">
+                <div class="bg-indigo-50 px-4 py-2 rounded-lg">
+                    <p id="user-info" class="text-sm text-indigo-800 font-medium">Inizializzazione...</p>
+                </div>
+                <!-- Pulsanti per la nuova autenticazione -->
+                <button onclick="window.toggleAuthModal()" id="auth-button" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 shadow-md transition-all duration-200" style="display:none;">
+                    Accedi / Registrati
+                </button>
+                <button onclick="window.handleSignOut()" id="logout-button" class="bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-400 shadow-md transition-all duration-200" style="display:none;">
+                    Esci
+                </button>
+            </div>
         </header>
 
         <!-- Sezione Inserimento URL iCal -->
@@ -398,6 +412,7 @@
     </script>
 </body>
 </html>
+
 
 
 
