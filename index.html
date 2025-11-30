@@ -376,17 +376,13 @@ const renderCalendar = () => {
         col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
 
         col.innerHTML = `
+       col.innerHTML = `
             <div class="day-label">${dayName}</div>
-            <div class="day-number">${date.getDate()}</div>
-            <hr class="my-2">
-            <div class="reservation-container" id="res-container-${date.getTime()}">
-                </div>
-        `; // Corretto: solo un div reservation-container
-
-        gridEl.appendChild(col);
-    } // Chiudi il ciclo dei giorni
-
-
+             <div class="day-number">${date.getDate()}</div>
+             <hr class="my-2">
+                <div class="reservation-container" id="res-container-${date.getTime()}">
+                        </div>
+         `;
     // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese) ---
 
     allReservations.forEach(res => {
@@ -543,6 +539,7 @@ const renderCalendar = () => {
     </script>
 </body>
 </html>
+
 
 
 
