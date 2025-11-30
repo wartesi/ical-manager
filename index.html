@@ -343,60 +343,118 @@
             renderCalendar();
         };
 
- const renderCalendar = () => {
-     const gridEl = document.getElementById('calendar-grid');
-     gridEl.innerHTML = '';
-     gridEl.style.display = 'flex'; // Importante per orizzontale
- 
-     // Titolo periodo
-     const endPeriod = new Date(currentStartDate);
-     endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
-     document.getElementById('current-period').textContent = 
-         `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
- 
-     const today = new Date();
-     today.setHours(0,0,0,0);
- 
-     // Genera giorni
-     for (let i = 0; i < VIEW_DAYS; i++) {
-         const date = new Date(currentStartDate);
-         date.setDate(date.getDate() + i);
- 
-         const isToday = date.getTime() === today.getTime();
-         const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
- 
-         const col = document.createElement('div');
-         //Rimuoviamo il border-top-4 qui per evitare che interferisca col posizionamento assoluto
-         col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
- 
-         col.innerHTML = `
-             <div class="day-label">${dayName}</div>
-             <div class="day-number">${date.getDate()}</div>
-             <hr class="my-2">
-             <div class="reservation-container" id="res-container-${date.getTime()}">
-             </div>
-             <div class="reservation-container" id="res-container-${date.getTime()}"></div>
-         `; // La chiusura dell'innerHtml
- 
-         gridEl.appendChild(col); // <-- AGGIUNGI QUESTO
-     } // Chiudi il ciclo dei giorni
- 
-     // ... [qui finisce il codice del ciclo for modificato] ...
- 
-     // --- logica di Disegno delle Prenotazioni Unificate ---
-     const daysMap = new Map();
-     for (let i = 0; i < VIEW_DAYS; i++) {
-         const date = new Date(currentStartDate);
-         date.setDate(date.getDate() + i);
-         // Mappa ogni timestamp del giorno all'indice del giorno (i)
-         daysMap.set(date.getTime(), i);
-     }
- 
-     allReservations.forEach(res => {
-         // ... [tutto il codice per calcolare totalWidth e inserire il div] ...
-     });
- 
-     // --- Fine Logica di Disegno Unificato ---
+// Riga 334
+const renderCalendar = () => {
+    const gridEl = document.getElementById('calendar-grid');
+    gridEl.innerHTML = '';
+    gridEl.style.display = 'flex'; // Importante per orizzontale
+
+    // Titolo periodo
+    const endPeriod = new Date(currentStartDate);
+    endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
+    document.getElementById('current-period').textContent = 
+        `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Mappa per associare il timestamp del giorno alla sua posizione (indice)
+    const daysMap = new Map();
+
+    // --- 1. Genera i contenitori dei giorni (colonne) ---
+    for (let i = 0; i < VIEW_DAYS; i++) {
+        const date = new Date(currentStartDate);
+        date.setDate(date.getDate() + i);
+
+        // Mappa ogni timestamp del giorno all'indice del giorno (i)
+        daysMap.set(date.getTime(), i); 
+
+        const isToday = date.getTime() === today.getTime();
+        const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
+
+        const col = document.createElement('div');
+        col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
+
+        col.innerHTML = `
+            <div class="day-label">${dayName}</div>
+            <div class="day-number">${date.getDate()}</div>
+            <hr class="my-2">
+            <div class="reservation-container" id="res-container-${date.getTime()}">
+                </div>
+        `; // Corretto: solo un div reservation-container
+
+        gridEl.appendChild(col);
+    } // Chiudi il ciclo dei giorni
+
+
+    // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese) ---
+
+    allReservations.forEach(res => {
+        const startTime = res.start.getTime();
+        const endTime = res.end.getTime();
+
+        // Controlla se la prenotazione è visibile nel periodo di 45 giorni
+        if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
+            
+            // Trova il giorno di inizio visibile e l'indice del giorno di FINE REALE (check-out - 1 giorno)
+            let startIndex = daysMap.get(startTime);
+            let checkoutIndex = daysMap.get(endTime); // Indice del giorno di check-out
+
+            // Se l'inizio non è nel periodo, inizia dal primo giorno (indice 0)
+            if (startIndex === undefined) { 
+                startIndex = 0;
+            }
+
+            // Se la fine non è nel periodo, la barra deve arrivare fino all'ultimo giorno visibile
+            let endIndex = VIEW_DAYS - 1; // Default: va fino alla fine del periodo
+
+            if (checkoutIndex !== undefined) {
+                // Se il checkout è visibile, la fine è il giorno prima del checkout
+                endIndex = checkoutIndex - 1; 
+            }
+            
+            // Se la prenotazione è finita prima dell'inizio del periodo, salta
+            if (endIndex < startIndex && checkoutIndex !== undefined && checkoutIndex <= startIndex) {
+                 return;
+            }
+
+            // Calcola la durata (in numero di giorni/colonne)
+            const durationDays = endIndex - startIndex + 1;
+            
+            // --- Inserimento del Blocco nel Primo Giorno Visibile ---
+            
+            // Troviamo il contenitore del giorno in cui la prenotazione inizia *visibilmente*
+            const dateOfFirstVisibleDay = new Date(currentStartDate);
+            dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
+            
+            // SELEZIONIAMO il contenitore corretto tramite l'ID
+            const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
+
+            if (resContainer) {
+                const div = document.createElement('div');
+                
+                // Colori casuali basati sul nome
+                const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500'];
+                const colorClass = colors[res.apartmentName.length % colors.length];
+
+                // Larghezza di una colonna (140px) * numero di giorni
+                const columnWidth = 140; 
+                const totalWidth = (columnWidth * durationDays) - 1; // -1 per evitare doppio bordo sul confine
+
+                div.style.width = `${totalWidth}px`;
+                div.style.position = 'absolute'; 
+                div.style.zIndex = 10;
+                div.style.marginLeft = `0px`; 
+                
+                div.className = `reservation text-white font-semibold ${colorClass} text-center`;
+                div.textContent = res.apartmentName;
+                div.title = res.summary;
+                
+                resContainer.appendChild(div);
+            }
+        }
+    });
+    // --- Fine Logica di Disegno Unificato ---
      gridEl.appendChild(col);
      gridEl.appendChild(col);
         };
@@ -485,6 +543,7 @@
     </script>
 </body>
 </html>
+
 
 
 
