@@ -476,32 +476,67 @@
             }
         };
 
-        // --- INIT ---
+// --- INIT ---
+        
+        const updateUI = (user) => {
+            if (user) {
+                userId = user.uid;
+                isAnon = user.isAnonymous;
+
+                userInfoEl.textContent = isAnon ? 
+                    `Accesso Anonimo (${userId.substring(0, 5)}...)` : 
+                    `Connesso: ${user.email}`;
+                
+                authButton.style.display = isAnon ? 'block' : 'none';
+                logoutButton.style.display = isAnon ? 'none' : 'block';
+
+                loadIcalUrls();
+            } else {
+                // Nessun utente è autenticato, tenta l'accesso anonimo se non è già attivo
+                authButton.style.display = 'block';
+                logoutButton.style.display = 'none';
+                userInfoEl.textContent = 'Disconnesso. Clicca per accedere.';
+            }
+            // Assicura che la vista calendario venga renderizzata anche senza dati
+            renderCalendar(); 
+        };
+
         const initFirebase = async () => {
             if(firebaseConfig.projectId) {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
-                else await signInAnonymously(auth);
-                
-                onAuthStateChanged(auth, u => {
-                    if(u) {
-                        userId = u.uid;
-                        document.getElementById('user-info').textContent = "Utente Connesso";
-                        loadIcalUrls();
+                // Imposta il listener di stato per la gestione UI
+                onAuthStateChanged(auth, updateUI); 
+
+                try {
+                    // 1. Tenta l'accesso con token custom (se siamo nella piattaforma canvas)
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
                     }
-                });
+                    
+                    // 2. Se nessun utente è connesso (o solo il custom token ha fallito), forza l'accesso anonimo
+                    if (!auth.currentUser) {
+                        await signInAnonymously(auth);
+                    }
+                    
+                } catch (error) {
+                    console.error("Errore nel processo di accesso iniziale:", error);
+                    userInfoEl.textContent = 'Errore Autenticazione';
+                }
+            } else {
+                userInfoEl.textContent = 'Errore Configurazione Firebase';
+                showModal("Errore Critico", "Configurazione Firebase non trovata.");
             }
-            // Renderizza calendario vuoto all'inizio
-            renderCalendar();
+            // Non chiamare renderCalendar qui, è gestito da updateUI
         };
         
         window.onload = initFirebase;
     </script>
 </body>
 </html>
+
 
 
 
