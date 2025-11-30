@@ -158,14 +158,15 @@
         let app, db, auth, userId = null;
         let icalUrls = [];
         let allReservations = [];
+        let isAnon = true; // Nuovo: Traccia se l'utente è anonimo
         
         // Impostazioni Calendario Orizzontale
         let currentStartDate = new Date();
-        currentStartDate.setHours(0, 0, 0, 0); // Start oggi mezzanotte
-        const VIEW_DAYS = 45; // Mostra 45 giorni
+        currentStartDate.setHours(0, 0, 0, 0); 
+        const VIEW_DAYS = 45; 
         
         const ICAL_COLLECTION = "ical_urls";
-        const ICAL_PROXY_URL = "https://corsproxy.io/?";
+        const ICAL_PROXY_URL = "https://ical-proxy-worker.glitch.me/"; // Proxy CORS (ho lasciato la versione Glitch)
         
         // --- CONFIGURAZIONE FIREBASE ---
         const appId = 'calendario-affitti-brevi'; 
@@ -180,9 +181,17 @@
         };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
         
+        // Elementi DOM aggiornati per i nuovi pulsanti e modal
         const icalListEl = document.getElementById('ical-list');
         const syncButton = document.getElementById('sync-button');
-
+        const authButton = document.getElementById('auth-button'); 
+        const logoutButton = document.getElementById('logout-button'); 
+        const userInfoEl = document.getElementById('user-info');
+        const authModalEl = document.getElementById('auth-modal'); 
+        const authStatusEl = document.getElementById('auth-status-message'); 
+        const loginFormEl = document.getElementById('login-form'); // Nuovo
+        const registerFormEl = document.getElementById('register-form'); // Nuovo
+        
         // --- FUNZIONI DI UTILITY ---
         window.showModal = (title, message) => {
             document.getElementById('modal-title').textContent = title;
@@ -194,7 +203,7 @@
             document.getElementById('modal').classList.add('hidden');
             document.getElementById('modal').classList.remove('flex');
         };
-
+        http://googleusercontent.com/immersive_entry_chip/1
         // --- PARSING ICAL ---
         const icalToDate = (icalDate) => {
             const y = icalDate.substring(0, 4);
@@ -412,6 +421,7 @@
     </script>
 </body>
 </html>
+
 
 
 
