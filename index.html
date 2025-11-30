@@ -157,9 +157,10 @@
     </div>
 
     <!-- Firebase Imports e Logica -->
-    <script type="module">
-       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+<script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // IMPORT CORRETTO: Aggiunge GoogleAuthProvider, signInWithPopup, signOut
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- VARIABILI GLOBALI ---
@@ -344,56 +345,166 @@
             renderCalendar();
         };
 
+        // FUNZIONE renderCalendar AGGIORNATA PER BARRE ESTESE
         const renderCalendar = () => {
             const gridEl = document.getElementById('calendar-grid');
             gridEl.innerHTML = '';
             gridEl.style.display = 'flex'; // Importante per orizzontale
-            
+
             // Titolo periodo
             const endPeriod = new Date(currentStartDate);
             endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
             document.getElementById('current-period').textContent = 
                 `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
 
-            const today = new Date(); 
-            today.setHours(0,0,0,0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-            // Genera giorni
+            // Mappa per associare il timestamp del giorno alla sua posizione (indice)
+            const daysMap = new Map();
+
+            // --- 1. Genera i contenitori dei giorni (colonne) ---
             for (let i = 0; i < VIEW_DAYS; i++) {
                 const date = new Date(currentStartDate);
                 date.setDate(date.getDate() + i);
-                
+
+                // Mappa ogni timestamp del giorno all'indice del giorno (i)
+                daysMap.set(date.getTime(), i); 
+
                 const isToday = date.getTime() === today.getTime();
                 const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
-                
+
                 const col = document.createElement('div');
-                col.className = `day-column ${isToday ? 'bg-blue-50 border-t-4 border-blue-500' : ''}`;
-                
+                col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
+
                 col.innerHTML = `
                     <div class="day-label">${dayName}</div>
                     <div class="day-number">${date.getDate()}</div>
                     <hr class="my-2">
+                    <div class="reservation-container" id="res-container-${date.getTime()}">
+                        </div>
                 `;
 
-                // Cerca prenotazioni per questo giorno
-                allReservations.forEach(res => {
-                    if (date >= res.start && date <= res.end) {
+                gridEl.appendChild(col);
+            } // Chiudi il ciclo dei giorni
+
+
+            // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese) ---
+
+            allReservations.forEach(res => {
+                const startTime = res.start.getTime();
+                const endTime = res.end.getTime();
+
+                // Controlla se la prenotazione è visibile nel periodo di 45 giorni
+                if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
+                    
+                    // Trova il giorno di inizio visibile e l'indice del giorno di FINE REALE (check-out - 1 giorno)
+                    let startIndex = daysMap.get(startTime);
+                    let checkoutIndex = daysMap.get(endTime); // Indice del giorno di check-out
+
+                    // Se l'inizio non è nel periodo, inizia dal primo giorno (indice 0)
+                    if (startIndex === undefined) { 
+                        startIndex = 0;
+                    }
+
+                    // Se la fine non è nel periodo, la barra deve arrivare fino all'ultimo giorno visibile
+                    let endIndex = VIEW_DAYS - 1; // Default: va fino alla fine del periodo
+
+                    if (checkoutIndex !== undefined) {
+                        // Se il checkout è visibile, la fine è il giorno prima del checkout
+                        endIndex = checkoutIndex - 1; 
+                    }
+                    
+                    // Se la prenotazione è finita prima dell'inizio del periodo, salta
+                    if (endIndex < startIndex && checkoutIndex !== undefined && checkoutIndex <= startIndex) {
+                         return;
+                    }
+
+                    // Calcola la durata (in numero di giorni/colonne)
+                    const durationDays = endIndex - startIndex + 1;
+                    
+                    // --- Inserimento del Blocco nel Primo Giorno Visibile ---
+                    
+                    // Troviamo il contenitore del giorno in cui la prenotazione inizia *visibilmente*
+                    const dateOfFirstVisibleDay = new Date(currentStartDate);
+                    dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
+                    
+                    // SELEZIONIAMO il contenitore corretto tramite l'ID
+                    const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
+
+                    if (resContainer) {
                         const div = document.createElement('div');
-                        // Colori casuali basati sul nome
-                        const colors = ['bg-red-100 text-red-800', 'bg-green-100 text-green-800', 'bg-blue-100 text-blue-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800'];
-                        const colorClass = colors[res.apartmentName.length % colors.length];
                         
-                        div.className = `reservation ${colorClass}`;
+                        // Colori casuali basati sul nome
+                        const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500'];
+                        const colorClass = colors[res.apartmentName.length % colors.length];
+
+                        // Larghezza di una colonna (140px) * numero di giorni
+                        const columnWidth = 140; 
+                        const totalWidth = (columnWidth * durationDays) - 1; // -1 per evitare doppio bordo sul confine
+
+                        div.style.width = `${totalWidth}px`;
+                        div.style.position = 'absolute'; 
+                        div.style.zIndex = 10;
+                        div.style.marginLeft = `0px`; 
+                        
+                        div.className = `reservation text-white font-semibold ${colorClass} text-center`;
                         div.textContent = res.apartmentName;
                         div.title = res.summary;
-                        col.appendChild(div);
+                        
+                        resContainer.appendChild(div);
                     }
-                });
-                
-                gridEl.appendChild(col);
+                }
+            });
+        };
+
+        // --- LOGICA AUTENTICAZIONE UTENTE ---
+        window.signInWithGoogle = async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Errore di Login con Google:", error);
+                showModal("Errore di Login", "Non è stato possibile accedere con Google. Riprova.");
             }
         };
 
+        window.logOut = async () => {
+            try {
+                await signOut(auth);
+                icalUrls = []; // Svuota i dati dell'utente precedente
+                allReservations = [];
+                renderCalendar(); // Aggiorna per mostrare il calendario vuoto
+            } catch (error) {
+                console.error("Errore di Logout:", error);
+            }
+        };
+        
+        const renderAuthButton = (user) => {
+            const authButtonsEl = document.getElementById('auth-buttons');
+            authButtonsEl.innerHTML = '';
+            
+            if (user && !user.isAnonymous) {
+                // Utente Loggato
+                authButtonsEl.innerHTML = `
+                    <button onclick="logOut()"
+                            class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-150 shadow-md whitespace-nowrap">
+                        Logout
+                    </button>
+                `;
+                document.getElementById('user-info').textContent = `Utente: ${user.email || 'Connesso'}`;
+            } else {
+                // Utente Sconnesso (o Anonimo)
+                authButtonsEl.innerHTML = `
+                    <button onclick="signInWithGoogle()"
+                            class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md whitespace-nowrap">
+                        Login / Registrati
+                    </button>
+                `;
+                document.getElementById('user-info').textContent = "Stato: Non Autenticato";
+            }
+        };
+        
         // --- INIT ---
         const initFirebase = async () => {
             if(firebaseConfig.projectId) {
@@ -401,15 +512,32 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
-                else await signInAnonymously(auth);
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    // NON USIAMO signInAnonymously: attendiamo il login
+                }
                 
                 onAuthStateChanged(auth, u => {
+                    userId = null; // Resetta l'ID
                     if(u) {
                         userId = u.uid;
-                        document.getElementById('user-info').textContent = "Utente Connesso";
-                        loadIcalUrls();
+                        // Solo se non è anonimo carichiamo i dati
+                        if (!u.isAnonymous) {
+                            loadIcalUrls();
+                        } else {
+                            // Se è anonimo (non dovrebbe succedere se non forzato), mostriamo solo il pulsante di login
+                            icalListEl.innerHTML = '<p class="text-sm text-gray-500">Per salvare i calendari, esegui il Login/Registrazione.</p>';
+                            document.getElementById('url-count').textContent = '0';
+                            document.getElementById('loading-urls').style.display = 'none';
+                        }
+                    } else {
+                         // Utente disconnesso o anonimo: nascondi i dati e mostra il placeholder
+                         icalUrls = []; 
+                         allReservations = [];
+                         renderCalendar();
                     }
+                    renderAuthButton(u); // Aggiorna UI e pulsante
                 });
             }
             // Renderizza calendario vuoto all'inizio
@@ -420,6 +548,9 @@
     </script>
 </body>
 </html>
+</body>
+</html>
+
 
 
 
