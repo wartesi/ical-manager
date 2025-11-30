@@ -470,31 +470,20 @@ gridEl.appendChild(col);
             }
         }
     });
+// --- 3. Forzare l'altezza delle colonne (Metodo Semplice e Pulito) ---
 
-    // --- 3. Forzare l'altezza delle colonne (Spacer/Altezza Dinamica) ---
-    // Calcola l'altezza minima necessaria basata sul numero totale di righe (lane)
-    const BASE_HEIGHT = 90; // Altezza intestazione
-    const LANE_HEIGHT = 28; // Altezza per riga
-    const minRequiredHeight = BASE_HEIGHT + (currentLaneIndex * LANE_HEIGHT) + 20; // 20px di padding finale
+// Calcola l'altezza minima necessaria basata sul numero totale di righe (lane)
+const BASE_HEIGHT = 90; // Altezza intestazione
+const LANE_HEIGHT = 28; // Altezza per riga
+const minRequiredHeight = BASE_HEIGHT + (currentLaneIndex * LANE_HEIGHT) + 20; // 20px di padding finale
 
-    // Itera su tutti i giorni per assicurare che abbiano tutti la stessa altezza
-    for (let i = 0; i < VIEW_DAYS; i++) {
-        const date = new Date(currentStartDate);
-        date.setDate(date.getDate() + i);
-        
-        // Cerca la colonna del giorno corrente
-        const dayEl = document.getElementById(`res-container-${date.getTime()}`).closest('.day-column');
+// Imposta il min-height direttamente sul contenitore principale del calendario (gridEl).
+// Questo è il modo più affidabile per forzare l'espansione del contenitore Flexbox.
+gridEl.style.minHeight = `${minRequiredHeight}px`;
 
-        if (dayEl) {
-             // Imposta l'altezza fissa calcolata. 
-             dayEl.style.minHeight = `${minRequiredHeight}px`;
-        }
-    }
-}; // Fine della funzione renderCalendar
-        gridEl.appendChild(col);
-    } // Chiudi il ciclo dei giorni
+// NON è necessario iterare sui singoli day-column; Flexbox gestisce l'altezza.
 
-
+// Riga 493: Fine della funzione renderCalendar
     // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese, Livellamento Fisso e Tooltip) ---
     
     // 1. CREA UNA MAPPA DEI LIVELLI FISSI PER OGNI NOME DI APPARTAMENTO/CALENDARIO
@@ -667,6 +656,7 @@ gridEl.appendChild(col);
     </script>
 </body>
 </html>
+
 
 
 
