@@ -32,10 +32,7 @@
             background-color: white;
             box-sizing: border-box; 
             font-size: initial; 
-            position: relative; 
-            /* MODIFICHE PER SOVRAPPOSIZIONE */
-            height: auto; /* Permette l'espansione in altezza */
-            overflow: visible; /* Permette al contenuto assoluto di espandersi */
+            position: relative; /* CRUCIALE per le barre estese */
         }
 
         /* Rimuove il bordo destro sull'ultima colonna */
@@ -48,9 +45,8 @@
             position: relative;
             width: 100%;
             padding: 0; 
-            /* MODIFICHE PER SOVRAPPOSIZIONE: rimuove spazio fisso */
-            margin-bottom: 0;
-            height: 0; /* Altezza zero, sarà controllata dalle barre assolute */
+            margin-bottom: 4px;
+            height: 25px; /* Diamo un'altezza fissa al contenitore */
         }
         
         /* Prenotazione (la barra che si estende) */
@@ -82,23 +78,6 @@
             text-align: center;
             margin-bottom: 8px;
             color: #1f2937;
-        }
-
-        /* Stile per il giorno corrente */
-        .is-today {
-            border-top: 4px solid #4f46e5; /* Bordo blu indaco audace */
-        }
-        /* Assicurati che il bordo del giorno non interferisca con il bordo superiore "oggi" */
-        .is-today .day-number, .is-today .day-label {
-            padding-top: 0; 
-        }
-    /* Stile per il giorno corrente */
-        .is-today {
-            border-top: 4px solid #4f46e5; /* Bordo blu indaco audace */
-        }
-        /* Assicurati che il bordo del giorno non interferisca con il bordo superiore "oggi" */
-        .is-today .day-number, .is-today .day-label {
-            padding-top: 0; 
         }
 </style>
 </head>
@@ -396,7 +375,7 @@
                 const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
 
                 const col = document.createElement('div');
-                col.className = `day-column ${isToday ? 'bg-blue-50 is-today' : ''}`;
+                col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
 
                 col.innerHTML = `
                     <div class="day-label">${dayName}</div>
@@ -410,111 +389,73 @@
             } // Chiudi il ciclo dei giorni
 
 
-// --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese) ---
-        
-        // Mappa per tenere traccia di quale "livello" è occupato per ogni giorno nel periodo
-        const laneMap = new Array(VIEW_DAYS).fill(0); // Inizializza tutti i giorni a livello 0
+            // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese) ---
 
-        // Ordina le prenotazioni per la data di inizio per garantire che le collisioni siano gestite in ordine
-        allReservations.sort((a, b) => a.start - b.start);
+            allReservations.forEach(res => {
+                const startTime = res.start.getTime();
+                const endTime = res.end.getTime();
 
-        allReservations.forEach(res => {
-            const startTime = res.start.getTime();
-            const endTime = res.end.getTime();
+                // Controlla se la prenotazione è visibile nel periodo di 45 giorni
+                if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
+                    
+                    // Trova il giorno di inizio visibile e l'indice del giorno di FINE REALE (check-out - 1 giorno)
+                    let startIndex = daysMap.get(startTime);
+                    let checkoutIndex = daysMap.get(endTime); // Indice del giorno di check-out
 
-            if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
-                
-                let startIndex = daysMap.get(startTime);
-                let checkoutIndex = daysMap.get(endTime); 
-
-                if (startIndex === undefined) startIndex = 0;
-                
-                let endIndex = VIEW_DAYS - 1; 
-                if (checkoutIndex !== undefined) endIndex = checkoutIndex - 1; 
-                
-                if (endIndex < startIndex) return;
-
-                const durationDays = endIndex - startIndex + 1;
-                
-                // --- Determina il Livello (Lane) Disponibile ---
-                let lane = 0;
-                // Trova il primo livello (lane) libero in tutto il range della prenotazione
-                for (lane = 0; ; lane++) {
-                    let isLaneFree = true;
-                    for (let d = startIndex; d <= endIndex; d++) {
-                        if (laneMap[d] > lane) {
-                            isLaneFree = false;
-                            break;
-                        }
+                    // Se l'inizio non è nel periodo, inizia dal primo giorno (indice 0)
+                    if (startIndex === undefined) { 
+                        startIndex = 0;
                     }
-                    if (isLaneFree) break;
+
+                    // Se la fine non è nel periodo, la barra deve arrivare fino all'ultimo giorno visibile
+                    let endIndex = VIEW_DAYS - 1; // Default: va fino alla fine del periodo
+
+                    if (checkoutIndex !== undefined) {
+                        // Se il checkout è visibile, la fine è il giorno prima del checkout
+                        endIndex = checkoutIndex - 1; 
+                    }
+                    
+                    // Se la prenotazione è finita prima dell'inizio del periodo, salta
+                    if (endIndex < startIndex && checkoutIndex !== undefined && checkoutIndex <= startIndex) {
+                         return;
+                    }
+
+                    // Calcola la durata (in numero di giorni/colonne)
+                    const durationDays = endIndex - startIndex + 1;
+                    
+                    // --- Inserimento del Blocco nel Primo Giorno Visibile ---
+                    
+                    // Troviamo il contenitore del giorno in cui la prenotazione inizia *visibilmente*
+                    const dateOfFirstVisibleDay = new Date(currentStartDate);
+                    dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
+                    
+                    // SELEZIONIAMO il contenitore corretto tramite l'ID
+                    const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
+
+                    if (resContainer) {
+                        const div = document.createElement('div');
+                        
+                        // Colori casuali basati sul nome
+                        const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500'];
+                        const colorClass = colors[res.apartmentName.length % colors.length];
+
+                        // Larghezza di una colonna (140px) * numero di giorni
+                        const columnWidth = 140; 
+                        const totalWidth = (columnWidth * durationDays) - 1; // -1 per evitare doppio bordo sul confine
+
+                        div.style.width = `${totalWidth}px`;
+                        div.style.position = 'absolute'; 
+                        div.style.zIndex = 10;
+                        div.style.marginLeft = `0px`; 
+                        
+                        div.className = `reservation text-white font-semibold ${colorClass} text-center`;
+                        div.textContent = res.apartmentName;
+                        div.title = res.summary;
+                        
+                        resContainer.appendChild(div);
+                    }
                 }
-                
-                // Segna il livello come occupato per tutti i giorni della prenotazione
-                for (let d = startIndex; d <= endIndex; d++) {
-                    laneMap[d] = lane + 1;
-                }
-                // --- Fine Logica Livello ---
-                 // Troviamo il contenitore del giorno in cui la prenotazione inizia *visibilmente*
-                 const dateOfFirstVisibleDay = new Date(currentStartDate);
-                 dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
-                 
-                 // SELEZIONIAMO il contenitore corretto tramite l'ID
-                 const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
-
-                 if (resContainer) {
-                     const div = document.createElement('div');
-                     
-                     // [CODICE PER I COLORI E IL CALCOLO DELLA LARGHEZZA QUI DENTRO]
-                     
-                     // ... (omesso il codice per i colori e la larghezza) ...
-
-                     // --- NUOVO CODICE PER IL TOOLTIP E IL LIVELLAMENTO VERTICALE ---
-                     
-                     // Calcola la data di checkout reale (Fine + 1 giorno) per il tooltip
-                     const checkoutDate = new Date(res.end.getTime()); 
-                     checkoutDate.setDate(checkoutDate.getDate() + 1);
-
-                     const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
-                     
-                     // Applica il posizionamento verticale (28px per livello)
-                     div.style.top = `${lane * 28}px`; 
-                     
-                     div.className = `reservation text-white font-semibold ${colorClass} text-center`;
-                     div.textContent = res.apartmentName;
-                     div.title = tooltipText; // <--- ASSEGNAZIONE DEL TOOLTIP
-                     
-                     resContainer.appendChild(div);
-                 }
-                const dateOfFirstVisibleDay = new Date(currentStartDate);
-                dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
-                const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
-
-                if (resContainer) {
-                    const div = document.createElement('div');
-                    
-                    const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500'];
-                    const colorClass = colors[res.apartmentName.length % colors.length];
-
-                    const columnWidth = 140; 
-                    const totalWidth = (columnWidth * durationDays) - 1; // -1 per evitare doppio bordo sul confine
-
-                    div.style.width = `${totalWidth}px`;
-                    div.style.position = 'absolute'; 
-                    div.style.zIndex = 10 + lane; // Aumenta lo z-index per i livelli più alti
-                    div.style.marginLeft = `0px`; 
-                    
-                    // Applica il posizionamento verticale (28px per livello)
-                    div.style.top = `${lane * 28}px`; 
-                    
-                    div.className = `reservation text-white font-semibold ${colorClass} text-center`;
-                    div.textContent = res.apartmentName;
-                    div.title = res.summary;
-                    
-                    resContainer.appendChild(div);
-                }
-            }
-        });
+            });
         };
 
         // --- LOGICA AUTENTICAZIONE UTENTE ---
@@ -609,6 +550,7 @@
 </html>
 </body>
 </html>
+
 
 
 
