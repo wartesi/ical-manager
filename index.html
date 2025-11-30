@@ -154,7 +154,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- VARIABILI GLOBALI ---
+// --- VARIABILI GLOBALI ---
         let app, db, auth, userId = null;
         let icalUrls = [];
         let allReservations = [];
@@ -166,7 +166,7 @@
         const VIEW_DAYS = 45; 
         
         const ICAL_COLLECTION = "ical_urls";
-        const ICAL_PROXY_URL = "https://ical-proxy-worker.glitch.me/"; // Proxy CORS (ho lasciato la versione Glitch)
+        const ICAL_PROXY_URL = "https://ical-proxy-worker.glitch.me/"; // Proxy CORS (lasciamo Glitch come ultima versione)
         
         // --- CONFIGURAZIONE FIREBASE ---
         const appId = 'calendario-affitti-brevi'; 
@@ -179,7 +179,7 @@
             appId: "1:338062221076:web:02d734c5a712a26a38ac01",
             measurementId: "G-2EJGFF5RPQ"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initialAuthToken : null; 
         
         // Elementi DOM aggiornati per i nuovi pulsanti e modal
         const icalListEl = document.getElementById('ical-list');
@@ -187,10 +187,11 @@
         const authButton = document.getElementById('auth-button'); 
         const logoutButton = document.getElementById('logout-button'); 
         const userInfoEl = document.getElementById('user-info');
+        // I seguenti elementi sono per il nuovo modal, assicurati che il modal sia stato incollato
         const authModalEl = document.getElementById('auth-modal'); 
         const authStatusEl = document.getElementById('auth-status-message'); 
-        const loginFormEl = document.getElementById('login-form'); // Nuovo
-        const registerFormEl = document.getElementById('register-form'); // Nuovo
+        const loginFormEl = document.getElementById('login-form');
+        const registerFormEl = document.getElementById('register-form');
         
         // --- FUNZIONI DI UTILITY ---
         window.showModal = (title, message) => {
@@ -421,6 +422,7 @@
     </script>
 </body>
 </html>
+
 
 
 
