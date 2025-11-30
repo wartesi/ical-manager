@@ -7,18 +7,18 @@
     <!-- Caricamento di Tailwind CSS per lo styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Utilizzo del font Inter -->
-<style>
+    <style>
        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-/* STILI PER CALENDARIO ORIZZONTALE */
+        /* STILI PER CALENDARIO ORIZZONTALE */
         #calendar-container {
             overflow-x: auto; /* Permette lo scroll laterale */
             white-space: nowrap; /* I giorni restano in riga */
             border: 1px solid #e5e7eb;
             border-radius: 0.75rem;
+            padding-bottom: 8px;
             background-color: #f9fafb;
-            font-size: 0; /* Rimuove lo spazio tra gli inline-block */
         }
 
         /* Colonna del singolo giorno */
@@ -31,36 +31,18 @@
             vertical-align: top;
             background-color: white;
             box-sizing: border-box; 
-            font-size: initial; 
-            position: relative; /* <--- MODIFICA CHIAVE: ESSENZIALE PER LA BARRA ESTESA */
-        }
-
-        /* Rimuove il bordo destro sull'ultima colonna */
-        .day-column:last-child {
-            border-right: none;
-        }
-
-        /* Nuovo contenitore per le barre di prenotazione */
-        .reservation-container {
-            position: relative;
-            width: 100%;
-            padding: 0; 
-            margin-bottom: 4px;
-            height: 25px; /* Diamo un'altezza fissa al contenitore */
         }
         
-        /* Prenotazione (la barra che si estende) */
+        /* Prenotazione */
         .reservation {
             font-size: 11px;
             padding: 4px 6px;
-            margin-bottom: 0; /* Rimuove margine inferiore */
+            margin-bottom: 4px;
             border-radius: 6px;
-            white-space: nowrap; /* Non deve andare a capo */
+            white-space: normal; /* Testo a capo */
             overflow: hidden;
             cursor: help;
             border: 1px solid rgba(0,0,0,0.05);
-            left: 0; 
-            position: absolute; /* <--- MODIFICA CHIAVE: Permette l'estensione */
         }
         
         .day-label {
@@ -79,18 +61,15 @@
             margin-bottom: 8px;
             color: #1f2937;
         }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
     <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-<header class="bg-white shadow-lg rounded-xl p-4 mb-6 flex justify-between items-center">
-    <div>
-        <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
-        <p id="user-info" class="text-sm text-gray-500 mt-1">Stato: Autenticazione in corso...</p>
-    </div>
-    <div id="auth-buttons">
-        </div>
-</header>
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-6">
+            <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
+            <p id="user-info" class="text-sm text-gray-500 mt-1">Caricamento...</p>
+        </header>
 
         <!-- Sezione Inserimento URL iCal -->
         <section class="bg-white shadow-lg rounded-xl p-6 mb-6">
@@ -157,8 +136,8 @@
 
     <!-- Firebase Imports e Logica -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- VARIABILI GLOBALI ---
@@ -343,192 +322,72 @@
             renderCalendar();
         };
 
-// Riga 334
-const renderCalendar = () => {
-    const gridEl = document.getElementById('calendar-grid');
-    gridEl.innerHTML = '';
-    gridEl.style.display = 'flex'; // Importante per orizzontale
-
-    // Titolo periodo
-    const endPeriod = new Date(currentStartDate);
-    endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
-    document.getElementById('current-period').textContent = 
-        `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Mappa per associare il timestamp del giorno alla sua posizione (indice)
-    const daysMap = new Map();
-
-    // --- 1. Genera i contenitori dei giorni (colonne) ---
-    for (let i = 0; i < VIEW_DAYS; i++) {
-        const date = new Date(currentStartDate);
-        date.setDate(date.getDate() + i);
-
-        // Mappa ogni timestamp del giorno all'indice del giorno (i)
-        daysMap.set(date.getTime(), i); 
-
-        const isToday = date.getTime() === today.getTime();
-        const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
-
-        const col = document.createElement('div');
-        col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
-
-        col.innerHTML = `
-       col.innerHTML = `
-            <div class="day-label">${dayName}</div>
-             <div class="day-number">${date.getDate()}</div>
-             <hr class="my-2">
-                <div class="reservation-container" id="res-container-${date.getTime()}">
-                        </div>
-         `;
-    // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese) ---
-
-    allReservations.forEach(res => {
-        const startTime = res.start.getTime();
-        const endTime = res.end.getTime();
-
-        // Controlla se la prenotazione è visibile nel periodo di 45 giorni
-        if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
+        const renderCalendar = () => {
+            const gridEl = document.getElementById('calendar-grid');
+            gridEl.innerHTML = '';
+            gridEl.style.display = 'flex'; // Importante per orizzontale
             
-            // Trova il giorno di inizio visibile e l'indice del giorno di FINE REALE (check-out - 1 giorno)
-            let startIndex = daysMap.get(startTime);
-            let checkoutIndex = daysMap.get(endTime); // Indice del giorno di check-out
+            // Titolo periodo
+            const endPeriod = new Date(currentStartDate);
+            endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
+            document.getElementById('current-period').textContent = 
+                `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
 
-            // Se l'inizio non è nel periodo, inizia dal primo giorno (indice 0)
-            if (startIndex === undefined) { 
-                startIndex = 0;
-            }
+            const today = new Date(); 
+            today.setHours(0,0,0,0);
 
-            // Se la fine non è nel periodo, la barra deve arrivare fino all'ultimo giorno visibile
-            let endIndex = VIEW_DAYS - 1; // Default: va fino alla fine del periodo
-
-            if (checkoutIndex !== undefined) {
-                // Se il checkout è visibile, la fine è il giorno prima del checkout
-                endIndex = checkoutIndex - 1; 
-            }
-            
-            // Se la prenotazione è finita prima dell'inizio del periodo, salta
-            if (endIndex < startIndex && checkoutIndex !== undefined && checkoutIndex <= startIndex) {
-                 return;
-            }
-
-            // Calcola la durata (in numero di giorni/colonne)
-            const durationDays = endIndex - startIndex + 1;
-            
-            // --- Inserimento del Blocco nel Primo Giorno Visibile ---
-            
-            // Troviamo il contenitore del giorno in cui la prenotazione inizia *visibilmente*
-            const dateOfFirstVisibleDay = new Date(currentStartDate);
-            dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
-            
-            // SELEZIONIAMO il contenitore corretto tramite l'ID
-            const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
-
-            if (resContainer) {
-                const div = document.createElement('div');
+            // Genera giorni
+            for (let i = 0; i < VIEW_DAYS; i++) {
+                const date = new Date(currentStartDate);
+                date.setDate(date.getDate() + i);
                 
-                // Colori casuali basati sul nome
-                const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500'];
-                const colorClass = colors[res.apartmentName.length % colors.length];
-
-                // Larghezza di una colonna (140px) * numero di giorni
-                const columnWidth = 140; 
-                const totalWidth = (columnWidth * durationDays) - 1; // -1 per evitare doppio bordo sul confine
-
-                div.style.width = `${totalWidth}px`;
-                div.style.position = 'absolute'; 
-                div.style.zIndex = 10;
-                div.style.marginLeft = `0px`; 
+                const isToday = date.getTime() === today.getTime();
+                const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
                 
-                div.className = `reservation text-white font-semibold ${colorClass} text-center`;
-                div.textContent = res.apartmentName;
-                div.title = res.summary;
+                const col = document.createElement('div');
+                col.className = `day-column ${isToday ? 'bg-blue-50 border-t-4 border-blue-500' : ''}`;
                 
-                resContainer.appendChild(div);
-            }
-        }
-    });
-    // --- Fine Logica di Disegno Unificato ---
-     gridEl.appendChild(col);
-     gridEl.appendChild(col);
-        };
-// --- LOGICA AUTENTICAZIONE UTENTE ---
-        window.signInWithGoogle = async () => {
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Errore di Login con Google:", error);
-                showModal("Errore di Login", "Non è stato possibile accedere con Google. Riprova.");
-            }
-        };
-
-        window.logOut = async () => {
-            try {
-                await signOut(auth);
-                icalUrls = []; // Svuota i dati dell'utente precedente
-                allReservations = [];
-                renderCalendar(); // Aggiorna per mostrare il calendario vuoto
-            } catch (error) {
-                console.error("Errore di Logout:", error);
-            }
-        };
-        
-        const renderAuthButton = (user) => {
-            const authButtonsEl = document.getElementById('auth-buttons');
-            authButtonsEl.innerHTML = '';
-            
-            if (user && !user.isAnonymous) {
-                // Utente Loggato
-                authButtonsEl.innerHTML = `
-                    <button onclick="logOut()"
-                            class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-150 shadow-md whitespace-nowrap">
-                        Logout
-                    </button>
+                col.innerHTML = `
+                    <div class="day-label">${dayName}</div>
+                    <div class="day-number">${date.getDate()}</div>
+                    <hr class="my-2">
                 `;
-                document.getElementById('user-info').textContent = `Utente: ${user.email || 'Connesso'}`;
-            } else {
-                // Utente Sconnesso (o Anonimo)
-                authButtonsEl.innerHTML = `
-                    <button onclick="signInWithGoogle()"
-                            class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md whitespace-nowrap">
-                        Login / Registrati
-                    </button>
-                `;
-                document.getElementById('user-info').textContent = "Stato: Non Autenticato";
+
+                // Cerca prenotazioni per questo giorno
+                allReservations.forEach(res => {
+                    if (date >= res.start && date <= res.end) {
+                        const div = document.createElement('div');
+                        // Colori casuali basati sul nome
+                        const colors = ['bg-red-100 text-red-800', 'bg-green-100 text-green-800', 'bg-blue-100 text-blue-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800'];
+                        const colorClass = colors[res.apartmentName.length % colors.length];
+                        
+                        div.className = `reservation ${colorClass}`;
+                        div.textContent = res.apartmentName;
+                        div.title = res.summary;
+                        col.appendChild(div);
+                    }
+                });
+                
+                gridEl.appendChild(col);
             }
         };
-// --- INIT ---
+
+        // --- INIT ---
         const initFirebase = async () => {
             if(firebaseConfig.projectId) {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    // Non usiamo più signInAnonymously di default
-                    // renderAuthButton(null) verrà chiamato da onAuthStateChanged
-                }
+                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+                else await signInAnonymously(auth);
                 
                 onAuthStateChanged(auth, u => {
-                    userId = null; // Resetta l'ID
                     if(u) {
                         userId = u.uid;
-                        // Solo se non è anonimo carichiamo i dati
-                        if (!u.isAnonymous) {
-                            loadIcalUrls();
-                        } else {
-                            // Se è anonimo, mostriamo solo il pulsante di login
-                            icalListEl.innerHTML = '<p class="text-sm text-gray-500">Per salvare i calendari, esegui il Login/Registrazione.</p>';
-                            document.getElementById('url-count').textContent = '0';
-                            document.getElementById('loading-urls').style.display = 'none';
-                        }
+                        document.getElementById('user-info').textContent = "Utente Connesso";
+                        loadIcalUrls();
                     }
-                    renderAuthButton(u); // Aggiorna UI
                 });
             }
             // Renderizza calendario vuoto all'inizio
