@@ -461,7 +461,8 @@ const renderCalendar = () => {
                 div.style.marginLeft = `0px`; 
                 
                 // LIVELLAMENTO FISSO: Applica il posizionamento verticale (28px per livello)
-                div.style.top = `${lane * 28}px`; 
+                const HEADER_OFFSET = 90; // Spazio occupato dall'intestazione del giorno
+                div.style.top = `${HEADER_OFFSET + (lane * 28)}px`;
                 
                 div.className = `reservation text-white font-semibold ${colorClass} text-center`;
                 div.textContent = res.apartmentName;
@@ -563,6 +564,7 @@ const renderCalendar = () => {
     </script>
 </body>
 </html>
+
 
 
 
