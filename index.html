@@ -22,17 +22,16 @@
 /* Colonna del singolo giorno */
         .day-column {
             display: inline-block;
-            width: 140px; /* Larghezza fissa */
-            min-height: 350px; /* <--- AUMENTA QUESTO VALORE (es. da 140px a 250px) */
+            width: 140px; 
+            min-height: 350px; /* NUOVO VALORE SENZA !important */
             border-right: 1px solid #e5e7eb;
             padding: 10px;
             vertical-align: top;
             background-color: white;
             box-sizing: border-box; 
             font-size: initial; 
-            position: relative;
-            /* MODIFICHE PER SOVRAPPOSIZIONE */
-            height: auto; 
+            position: relative; 
+            height: auto; /* Rimuovi !important anche qui */
             overflow: visible; 
         }
 
@@ -564,6 +563,7 @@ const renderCalendar = () => {
     </script>
 </body>
 </html>
+
 
 
 
