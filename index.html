@@ -209,7 +209,7 @@
             if (authModalEl.classList.contains('hidden')) {
                 authModalEl.classList.remove('hidden');
                 authModalEl.classList.add('flex');
-                authStatusEl.textContent = ''; // Resetta lo stato del messaggio
+                authStatusEl.textContent = ''; 
                 document.getElementById('auth-email').value = '';
                 document.getElementById('auth-password').value = '';
             } else {
@@ -260,10 +260,8 @@
                     const anonUser = auth.currentUser;
                     const credential = EmailAuthProvider.credential(email, password);
                     
-                    // Linka l'account anonimo al nuovo account permanente
                     await linkWithCredential(anonUser, credential);
                     
-                    // La funzione onAuthStateChanged si occuperà di ricaricare i dati e aggiornare l'UI
                     authStatusEl.textContent = 'Registrazione e migrazione dati riuscita!';
                 }
                 
@@ -278,7 +276,6 @@
         window.handleSignOut = async () => {
             try {
                 await signOut(auth);
-                // Dopo il logout, onAuthStateChanged gestirà il re-login anonimo
             } catch (error) {
                 console.error("Errore durante il logout:", error);
             }
@@ -491,7 +488,7 @@
 
                 loadIcalUrls();
             } else {
-                // Nessun utente è autenticato, tenta l'accesso anonimo se non è già attivo
+                // Nessun utente è connesso (dopo logout o fallimento)
                 authButton.style.display = 'block';
                 logoutButton.style.display = 'none';
                 userInfoEl.textContent = 'Disconnesso. Clicca per accedere.';
@@ -506,16 +503,16 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // Imposta il listener di stato per la gestione UI
+                // 1. Imposta il listener di stato per la gestione UI
                 onAuthStateChanged(auth, updateUI); 
 
                 try {
-                    // 1. Tenta l'accesso con token custom (se siamo nella piattaforma canvas)
+                    // 2. Tenta l'accesso con token custom (se siamo nella piattaforma canvas)
                     if (initialAuthToken) {
                         await signInWithCustomToken(auth, initialAuthToken);
                     }
                     
-                    // 2. Se nessun utente è connesso (o solo il custom token ha fallito), forza l'accesso anonimo
+                    // 3. Se nessun utente è connesso (o solo il custom token ha fallito), forza l'accesso anonimo
                     if (!auth.currentUser) {
                         await signInAnonymously(auth);
                     }
@@ -528,7 +525,6 @@
                 userInfoEl.textContent = 'Errore Configurazione Firebase';
                 showModal("Errore Critico", "Configurazione Firebase non trovata.");
             }
-            // Non chiamare renderCalendar qui, è gestito da updateUI
         };
         
         window.onload = initFirebase;
