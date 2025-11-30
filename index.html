@@ -7,7 +7,7 @@
     <!-- Caricamento di Tailwind CSS per lo styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Utilizzo del font Inter -->
-    <style>
+<style>
        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
@@ -18,27 +18,26 @@
             border: 1px solid #e5e7eb;
             border-radius: 0.75rem;
             background-color: #f9fafb;
-            /* NUOVO: Imposta la dimensione del font a 0 per rimuovere lo spazio tra gli inline-block */
-            font-size: 0; 
-            }
+            font-size: 0; /* Rimuove lo spazio tra gli inline-block */
+        }
 
         /* Colonna del singolo giorno */
         .day-column {
-        display: inline-block;
-        width: 140px; /* Larghezza fissa */
-        min-height: 140px;
-        border-right: 1px solid #e5e7eb;
-        padding: 10px;
-        vertical-align: top;
-        background-color: white;
-        box-sizing: border-box; 
-        /* NUOVO: Ripristina la dimensione del font all'interno della colonna */
-        font-size: initial; 
+            display: inline-block;
+            width: 140px; /* Larghezza fissa */
+            min-height: 140px;
+            border-right: 1px solid #e5e7eb;
+            padding: 10px;
+            vertical-align: top;
+            background-color: white;
+            box-sizing: border-box; 
+            font-size: initial; /* Ripristina la dimensione del font per il contenuto */
         }
-/* NUOVO STILE: Rimuovi il bordo destro sull'ultima colonna */
-.day-column:last-child {
-    border-right: none;
-}
+
+        /* Rimuove il bordo destro sull'ultima colonna */
+        .day-column:last-child {
+            border-right: none;
+        }
         
         /* Prenotazione */
         .reservation {
@@ -467,6 +466,7 @@
     </script>
 </body>
 </html>
+
 
 
 
