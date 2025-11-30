@@ -332,62 +332,62 @@
             renderCalendar();
         };
 
-        const renderCalendar = () => {
-            const gridEl = document.getElementById('calendar-grid');
-            gridEl.innerHTML = '';
-            gridEl.style.display = 'flex'; // Importante per orizzontale
-            
-            // Titolo periodo
-            const endPeriod = new Date(currentStartDate);
-            endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
-            document.getElementById('current-period').textContent = 
-                `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
-
-            const today = new Date(); 
-            today.setHours(0,0,0,0);
-            // Genera giorni
-            for (let i = 0; i < VIEW_DAYS; i++) {
-                const date = new Date(currentStartDate);
-                date.setDate(date.getDate() + i);
-                
-                const isToday = date.getTime() === today.getTime();
-                const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
-                
-                const col = document.createElement('div');
-                // Rimuoviamo il border-top-4 qui per evitare che interferisca col posizionamento assoluto
-                col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`; 
-                
-                col.innerHTML = `
-                    <div class="day-label">${dayName}</div>
-                    <div class="day-number">${date.getDate()}</div>
-                    <hr class="my-2">
-                    <div class="reservation-container" id="res-container-${date.getTime()}">
-                        </div>
-                        <div class="reservation-container" id="res-container-${date.getTime()}"></div>
-                `; // La chiusura dell'innerHtml
-
-                gridEl.appendChild(col); // <-- AGGIUNGI QUESTO
-            } // Chiudi il ciclo dei giorni
-                `;
-            // ... [qui finisce il codice del ciclo for modificato] ...
-            
-            // --- Logica di Disegno delle Prenotazioni Unificate ---
-            const daysMap = new Map();
-            for (let i = 0; i < VIEW_DAYS; i++) {
-                const date = new Date(currentStartDate);
-                date.setDate(date.getDate() + i);
-                // Mappa ogni timestamp del giorno all'indice del giorno (i)
-                daysMap.set(date.getTime(), i); 
-            }
-
-            allReservations.forEach(res => {
-                // ... [tutto il codice per calcolare totalWidth e inserire il div] ...
-            });
-            // --- Fine Logica di Disegno Unificato ---
-                gridEl.appendChild(col);
-            }               
-                gridEl.appendChild(col);
-            }
+ const renderCalendar = () => {
+     const gridEl = document.getElementById('calendar-grid');
+     gridEl.innerHTML = '';
+     gridEl.style.display = 'flex'; // Importante per orizzontale
+ 
+     // Titolo periodo
+     const endPeriod = new Date(currentStartDate);
+     endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
+     document.getElementById('current-period').textContent = 
+         `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
+ 
+     const today = new Date();
+     today.setHours(0,0,0,0);
+ 
+     // Genera giorni
+     for (let i = 0; i < VIEW_DAYS; i++) {
+         const date = new Date(currentStartDate);
+         date.setDate(date.getDate() + i);
+ 
+         const isToday = date.getTime() === today.getTime();
+         const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
+ 
+         const col = document.createElement('div');
+         //Rimuoviamo il border-top-4 qui per evitare che interferisca col posizionamento assoluto
+         col.className = `day-column ${isToday ? 'bg-blue-50' : ''}`;
+ 
+         col.innerHTML = `
+             <div class="day-label">${dayName}</div>
+             <div class="day-number">${date.getDate()}</div>
+             <hr class="my-2">
+             <div class="reservation-container" id="res-container-${date.getTime()}">
+             </div>
+             <div class="reservation-container" id="res-container-${date.getTime()}"></div>
+         `; // La chiusura dell'innerHtml
+ 
+         gridEl.appendChild(col); // <-- AGGIUNGI QUESTO
+     } // Chiudi il ciclo dei giorni
+ 
+     // ... [qui finisce il codice del ciclo for modificato] ...
+ 
+     // --- logica di Disegno delle Prenotazioni Unificate ---
+     const daysMap = new Map();
+     for (let i = 0; i < VIEW_DAYS; i++) {
+         const date = new Date(currentStartDate);
+         date.setDate(date.getDate() + i);
+         // Mappa ogni timestamp del giorno all'indice del giorno (i)
+         daysMap.set(date.getTime(), i);
+     }
+ 
+     allReservations.forEach(res => {
+         // ... [tutto il codice per calcolare totalWidth e inserire il div] ...
+     });
+ 
+     // --- Fine Logica di Disegno Unificato ---
+     gridEl.appendChild(col);
+     gridEl.appendChild(col);
         };
 // --- LOGICA AUTENTICAZIONE UTENTE ---
         window.signInWithGoogle = async () => {
@@ -474,6 +474,7 @@
     </script>
 </body>
 </html>
+
 
 
 
