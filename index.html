@@ -391,91 +391,86 @@
                 gridEl.appendChild(col);
             } // Chiudi il ciclo dei giorni
 
+// --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese, Livellamento Fisso e Tooltip) ---
 
-            // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese, Livellamento e Tooltip) ---
+// 1. CREA UNA MAPPA DEI LIVELLI FISSI PER OGNI NOME DI APPARTAMENTO/CALENDARIO
+const calendarLaneMap = new Map();
+let currentLaneIndex = 0;
+
+// Ordina le prenotazioni per la data di inizio (importante per la visualizzazione)
+allReservations.sort((a, b) => a.start - b.start);
+
+allReservations.forEach(res => {
+    const startTime = res.start.getTime();
+    const endTime = res.end.getTime();
+
+    // --- Determina il Livello Fisso (Lane) ---
+    let lane;
+    if (calendarLaneMap.has(res.apartmentName)) {
+        lane = calendarLaneMap.get(res.apartmentName);
+    } else {
+        // Assegna un nuovo livello consecutivo per ogni nuovo calendario iCal
+        lane = currentLaneIndex;
+        calendarLaneMap.set(res.apartmentName, lane);
+        currentLaneIndex++;
+    }
+    // --- Fine Logica Livello Fisso ---
+
+
+    // Controlla se la prenotazione è visibile nel periodo di 45 giorni
+    if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
+        
+        let startIndex = daysMap.get(startTime);
+        let checkoutIndex = daysMap.get(endTime); 
+
+        if (startIndex === undefined) startIndex = 0;
+        
+        let endIndex = VIEW_DAYS - 1; 
+        if (checkoutIndex !== undefined) endIndex = checkoutIndex - 1; 
+        
+        if (endIndex < startIndex) return;
+
+        const durationDays = endIndex - startIndex + 1;
+        
+        // --- Inserimento del Blocco nel Primo Giorno Visibile ---
+        
+        const dateOfFirstVisibleDay = new Date(currentStartDate);
+        dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
+        const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
+
+        if (resContainer) {
+            const div = document.createElement('div');
             
-            // Mappa per tenere traccia di quale "livello" è occupato per ogni giorno nel periodo
-            const laneMap = new Array(VIEW_DAYS).fill(0); // Inizializza tutti i giorni a livello 0
+            const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+            // Assegna il colore in base al livello fisso del calendario
+            const colorClass = colors[lane % colors.length];
 
-            // Ordina le prenotazioni per la data di inizio per garantire che le collisioni siano gestite in ordine
-            allReservations.sort((a, b) => a.start - b.start);
+            const columnWidth = 140; 
+            const totalWidth = (columnWidth * durationDays) - 1; 
 
-            allReservations.forEach(res => {
-                const startTime = res.start.getTime();
-                const endTime = res.end.getTime();
+            // Calcola la data di checkout reale (Fine + 1 giorno) per il tooltip
+            const checkoutDate = new Date(res.end.getTime()); 
+            checkoutDate.setDate(checkoutDate.getDate() + 1);
 
-                // Controlla se la prenotazione è visibile nel periodo di 45 giorni
-                if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
-                    
-                    let startIndex = daysMap.get(startTime);
-                    let checkoutIndex = daysMap.get(endTime); // Indice del giorno di check-out
+            // 📝 TOOLTIP: Crea il testo dettagliato
+            const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
 
-                    if (startIndex === undefined) startIndex = 0;
-                    
-                    let endIndex = VIEW_DAYS - 1; 
-                    if (checkoutIndex !== undefined) endIndex = checkoutIndex - 1; 
-                    
-                    if (endIndex < startIndex) return;
-
-                    const durationDays = endIndex - startIndex + 1;
-                    
-                    // --- Determina il Livello (Lane) Disponibile ---
-                    let lane = 0;
-                    // Trova il primo livello (lane) libero in tutto il range della prenotazione
-                    for (lane = 0; ; lane++) {
-                        let isLaneFree = true;
-                        for (let d = startIndex; d <= endIndex; d++) {
-                            if (laneMap[d] > lane) {
-                                isLaneFree = false;
-                                break;
-                            }
-                        }
-                        if (isLaneFree) break;
-                    }
-                    
-                    // Segna il livello come occupato per tutti i giorni della prenotazione
-                    for (let d = startIndex; d <= endIndex; d++) {
-                        laneMap[d] = lane + 1;
-                    }
-                    // --- Fine Logica Livello ---
-
-                    const dateOfFirstVisibleDay = new Date(currentStartDate);
-                    dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
-                    const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
-
-                    if (resContainer) {
-                        const div = document.createElement('div');
-                        
-                        const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500'];
-                        const colorClass = colors[res.apartmentName.length % colors.length];
-
-                        const columnWidth = 140; 
-                        const totalWidth = (columnWidth * durationDays) - 1; 
-
-                        // Calcola la data di checkout reale (Fine + 1 giorno) per il tooltip
-                        const checkoutDate = new Date(res.end.getTime()); 
-                        checkoutDate.setDate(checkoutDate.getDate() + 1);
-
-                        // 📝 TOOLTIP: Crea il testo dettagliato
-                        const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
-
-                        div.style.width = `${totalWidth}px`;
-                        div.style.position = 'absolute'; 
-                        div.style.zIndex = 10 + lane; 
-                        div.style.marginLeft = `0px`; 
-                        
-                        // 🌈 LIVELLAMENTO: Applica il posizionamento verticale (28px per livello)
-                        div.style.top = `${lane * 28}px`; 
-                        
-                        div.className = `reservation text-white font-semibold ${colorClass} text-center`;
-                        div.textContent = res.apartmentName;
-                        div.title = tooltipText; // Assegna il testo dettagliato al tooltip
-                        
-                        resContainer.appendChild(div);
-                    }
-                }
-            });
-        };
+            div.style.width = `${totalWidth}px`;
+            div.style.position = 'absolute'; 
+            div.style.zIndex = 10 + lane; 
+            div.style.marginLeft = `0px`; 
+            
+            // LIVELLAMENTO FISSO: Applica il posizionamento verticale (28px per livello)
+            div.style.top = `${lane * 28}px`; 
+            
+            div.className = `reservation text-white font-semibold ${colorClass} text-center`;
+            div.textContent = res.apartmentName;
+            div.title = tooltipText; // Assegna il testo dettagliato al tooltip
+            
+            resContainer.appendChild(div);
+        }
+    }
+});
 
         // --- LOGICA AUTENTICAZIONE UTENTE ---
         window.signInWithGoogle = async () => {
@@ -567,6 +562,7 @@
     </script>
 </body>
 </html>
+
 
 
 
