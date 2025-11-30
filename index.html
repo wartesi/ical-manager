@@ -19,21 +19,21 @@
             font-size: 0; /* Rimuove lo spazio tra gli inline-block */
         }
 
-        /* Colonna del singolo giorno */
+/* Colonna del singolo giorno */
         .day-column {
             display: inline-block;
             width: 140px; /* Larghezza fissa */
-            min-height: 140px;
+            min-height: 250px; /* <--- AUMENTA QUESTO VALORE (es. da 140px a 250px) */
             border-right: 1px solid #e5e7eb;
             padding: 10px;
             vertical-align: top;
             background-color: white;
             box-sizing: border-box; 
             font-size: initial; 
-            position: relative; /* CRUCIALE per le barre estese */
+            position: relative;
             /* MODIFICHE PER SOVRAPPOSIZIONE */
-            height: auto; /* Permette l'espansione in altezza */
-            overflow: visible; /* Permette al contenuto assoluto di espandersi */
+            height: auto; 
+            overflow: visible; 
         }
 
         /* Rimuove il bordo destro sull'ultima colonna */
@@ -564,6 +564,7 @@ allReservations.forEach(res => {
     </script>
 </body>
 </html>
+
 
 
 
