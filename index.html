@@ -66,23 +66,9 @@
 <body class="bg-gray-50 min-h-screen">
 
     <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <header class="bg-white shadow-lg rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
-                <p class="text-sm text-gray-500 mt-1">Gestione Affitti Brevi (Orizzontale)</p>
-            </div>
-            <div class="mt-4 sm:mt-0 flex items-center gap-4">
-                <div class="bg-indigo-50 px-4 py-2 rounded-lg">
-                    <p id="user-info" class="text-sm text-indigo-800 font-medium">Inizializzazione...</p>
-                </div>
-                <!-- Pulsanti per la nuova autenticazione -->
-                <button onclick="window.toggleAuthModal()" id="auth-button" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 shadow-md transition-all duration-200" style="display:none;">
-                    Accedi / Registrati
-                </button>
-                <button onclick="window.handleSignOut()" id="logout-button" class="bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-400 shadow-md transition-all duration-200" style="display:none;">
-                    Esci
-                </button>
-            </div>
+        <header class="bg-white shadow-lg rounded-xl p-4 mb-6">
+            <h1 class="text-3xl font-bold text-indigo-700">🗓️ Calendario Unificato Affitti Brevi</h1>
+            <p id="user-info" class="text-sm text-gray-500 mt-1">Caricamento...</p>
         </header>
 
         <!-- Sezione Inserimento URL iCal -->
@@ -150,23 +136,22 @@
 
     <!-- Firebase Imports e Logica -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, EmailAuthProvider, linkWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-// --- VARIABILI GLOBALI ---
+        // --- VARIABILI GLOBALI ---
         let app, db, auth, userId = null;
         let icalUrls = [];
         let allReservations = [];
-        let isAnon = true; // Traccia se l'utente è anonimo
         
         // Impostazioni Calendario Orizzontale
         let currentStartDate = new Date();
-        currentStartDate.setHours(0, 0, 0, 0); 
-        const VIEW_DAYS = 45; 
+        currentStartDate.setHours(0, 0, 0, 0); // Start oggi mezzanotte
+        const VIEW_DAYS = 45; // Mostra 45 giorni
         
         const ICAL_COLLECTION = "ical_urls";
-        const ICAL_PROXY_URL = "https://ical-proxy-worker.glitch.me/";
+        const ICAL_PROXY_URL = "https://corsproxy.io/?";
         
         // --- CONFIGURAZIONE FIREBASE ---
         const appId = 'calendario-affitti-brevi'; 
@@ -181,18 +166,10 @@
         };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
         
-        // Elementi DOM aggiornati per i nuovi pulsanti e modal
         const icalListEl = document.getElementById('ical-list');
         const syncButton = document.getElementById('sync-button');
-        const authButton = document.getElementById('auth-button'); 
-        const logoutButton = document.getElementById('logout-button'); 
-        const userInfoEl = document.getElementById('user-info');
-        const authModalEl = document.getElementById('auth-modal'); 
-        const authStatusEl = document.getElementById('auth-status-message'); 
-        const loginFormEl = document.getElementById('login-form');
-        const registerFormEl = document.getElementById('register-form');
-        
-// --- FUNZIONI DI UTILITY ---
+
+        // --- FUNZIONI DI UTILITY ---
         window.showModal = (title, message) => {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-content').textContent = message;
@@ -204,83 +181,7 @@
             document.getElementById('modal').classList.remove('flex');
         };
 
-        // --- FUNZIONI AUTH MODAL ---
-        window.toggleAuthModal = () => {
-            if (authModalEl.classList.contains('hidden')) {
-                authModalEl.classList.remove('hidden');
-                authModalEl.classList.add('flex');
-                authStatusEl.textContent = ''; 
-                document.getElementById('auth-email').value = '';
-                document.getElementById('auth-password').value = '';
-            } else {
-                authModalEl.classList.add('hidden');
-                authModalEl.classList.remove('flex');
-            }
-        };
-
-        window.toggleAuthForm = (showLogin) => {
-            if (showLogin) {
-                loginFormEl.classList.remove('hidden');
-                registerFormEl.classList.add('hidden');
-            } else {
-                loginFormEl.classList.add('hidden');
-                registerFormEl.classList.remove('hidden');
-            }
-            authStatusEl.textContent = '';
-        };
-
-        // --- LOGICA DI AUTENTICAZIONE EMAIL/PASSWORD ---
-
-        window.handleSignIn = async () => {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            authStatusEl.textContent = 'Accesso in corso...';
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                authStatusEl.textContent = 'Accesso riuscito!';
-                window.toggleAuthModal();
-            } catch (error) {
-                authStatusEl.textContent = `Errore accesso: ${error.message}`;
-                console.error("Errore di accesso:", error);
-            }
-        };
-
-        window.handleRegister = async () => {
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            authStatusEl.textContent = 'Registrazione in corso...';
-            
-            try {
-                // 1. Crea l'utente Email/Password
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                
-                // 2. Collega l'utente anonimo esistente a questo nuovo account
-                if (auth.currentUser && auth.currentUser.isAnonymous) {
-                    const anonUser = auth.currentUser;
-                    const credential = EmailAuthProvider.credential(email, password);
-                    
-                    await linkWithCredential(anonUser, credential);
-                    
-                    authStatusEl.textContent = 'Registrazione e migrazione dati riuscita!';
-                }
-                
-                window.toggleAuthModal();
-
-            } catch (error) {
-                authStatusEl.textContent = `Errore registrazione: ${error.message}`;
-                console.error("Errore di registrazione:", error);
-            }
-        };
-        
-        window.handleSignOut = async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Errore durante il logout:", error);
-            }
-        };
-           // --- PARSING ICAL ---
+        // --- PARSING ICAL ---
         const icalToDate = (icalDate) => {
             const y = icalDate.substring(0, 4);
             const m = icalDate.substring(4, 6);
@@ -471,65 +372,34 @@
             }
         };
 
-// --- INIT ---
-        
-        const updateUI = (user) => {
-            if (user) {
-                userId = user.uid;
-                isAnon = user.isAnonymous;
-
-                userInfoEl.textContent = isAnon ? 
-                    `Accesso Anonimo (${userId.substring(0, 5)}...)` : 
-                    `Connesso: ${user.email}`;
-                
-                authButton.style.display = isAnon ? 'block' : 'none';
-                logoutButton.style.display = isAnon ? 'none' : 'block';
-
-                loadIcalUrls();
-            } else {
-                // Nessun utente è connesso (dopo logout o fallimento)
-                authButton.style.display = 'block';
-                logoutButton.style.display = 'none';
-                userInfoEl.textContent = 'Disconnesso. Clicca per accedere.';
-            }
-            // Assicura che la vista calendario venga renderizzata anche senza dati
-            renderCalendar(); 
-        };
-
+        // --- INIT ---
         const initFirebase = async () => {
             if(firebaseConfig.projectId) {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // 1. Imposta il listener di stato per la gestione UI
-                onAuthStateChanged(auth, updateUI); 
-
-                try {
-                    // 2. Tenta l'accesso con token custom (se siamo nella piattaforma canvas)
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
+                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+                else await signInAnonymously(auth);
+                
+                onAuthStateChanged(auth, u => {
+                    if(u) {
+                        userId = u.uid;
+                        document.getElementById('user-info').textContent = "Utente Connesso";
+                        loadIcalUrls();
                     }
-                    
-                    // 3. Se nessun utente è connesso (o solo il custom token ha fallito), forza l'accesso anonimo
-                    if (!auth.currentUser) {
-                        await signInAnonymously(auth);
-                    }
-                    
-                } catch (error) {
-                    console.error("Errore nel processo di accesso iniziale:", error);
-                    userInfoEl.textContent = 'Errore Autenticazione';
-                }
-            } else {
-                userInfoEl.textContent = 'Errore Configurazione Firebase';
-                showModal("Errore Critico", "Configurazione Firebase non trovata.");
+                });
             }
+            // Renderizza calendario vuoto all'inizio
+            renderCalendar();
         };
         
         window.onload = initFirebase;
     </script>
 </body>
 </html>
+
+
 
 
 
