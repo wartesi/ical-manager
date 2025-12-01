@@ -648,7 +648,7 @@ const renderCalendar = () => {
         div.style.marginLeft = `0px`;
 
 // Ogni lane è una “riga” di prenotazioni, una sotto l’altra
-const LANE_HEIGHT = 34;           // distanza verticale tra una riga e l’altra
+const LANE_HEIGHT = 42;           // distanza verticale tra una riga e l’altra
 
 div.style.position = 'absolute';
 div.style.zIndex = 10 + lane;
@@ -667,7 +667,7 @@ div.style.top = `${lane * LANE_HEIGHT}px`;
 
     // 3. Forzare l'altezza minima delle colonne in base al numero di lane
     const BASE_HEIGHT = 80; // Altezza intestazione
-    const LANE_HEIGHT = 34; // Altezza per riga
+    const LANE_HEIGHT = 42; // Altezza per riga
     const minRequiredHeight = BASE_HEIGHT + (totalLanes * LANE_HEIGHT) + 20; // 20px di padding finale
 
     gridEl.style.minHeight = `${minRequiredHeight}px`;
@@ -831,6 +831,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
