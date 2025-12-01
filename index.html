@@ -394,28 +394,45 @@ const renderCalendar = () => {
 
     // --- 2. Logica di Disegno delle Prenotazioni Unificate (Barre Estese, Livellamento Fisso e Tooltip) ---
     
-    // 1. CREA UNA MAPPA DEI LIVELLI FISSI PER OGNI NOME DI APPARTAMENTO/CALENDARIO
-    const calendarLaneMap = new Map();
-    let currentLaneIndex = 0;
+// 1. Calcolo dinamico dei "lane" in base alle sovrapposizioni
+// Ogni lane è un array di prenotazioni già inserite su quella riga
+const lanes = [];
 
-    // Ordina le prenotazioni per la data di inizio (importante per la visualizzazione)
-    allReservations.sort((a, b) => a.start - b.start);
+// Ordina le prenotazioni per data di inizio
+allReservations.sort((a, b) => a.start - b.start);
 
-    allReservations.forEach(res => {
-        const startTime = res.start.getTime();
-        const endTime = res.end.getTime();
+// Per ogni prenotazione cerchiamo il primo lane libero dove non si sovrappone
+allReservations.forEach(res => {
+    let assignedLane = -1;
 
-        // --- Determina il Livello Fisso (Lane) ---
-        let lane;
-        if (calendarLaneMap.has(res.apartmentName)) {
-            lane = calendarLaneMap.get(res.apartmentName);
-        } else {
-            // Assegna un nuovo livello consecutivo per ogni nuovo calendario iCal
-            lane = currentLaneIndex;
-            calendarLaneMap.set(res.apartmentName, lane);
-            currentLaneIndex++;
+    for (let i = 0; i < lanes.length; i++) {
+        const laneReservations = lanes[i];
+
+        // Verifica se questa prenotazione può stare in questo lane
+        const overlaps = laneReservations.some(r => {
+            // Sovrapposizione se non vale (end < start || start > end) 
+            return !(res.end < r.start || res.start > r.end);
+        });
+
+        if (!overlaps) {
+            assignedLane = i;
+            laneReservations.push(res);
+            break;
         }
-        // --- Fine Logica Livello Fisso ---
+    }
+
+    // Se non abbiamo trovato un lane libero, ne creiamo uno nuovo
+    if (assignedLane === -1) {
+        assignedLane = lanes.length;
+        lanes.push([res]);
+    }
+
+    // Salviamo il lane sulla prenotazione, così dopo lo riutilizziamo
+    res.laneIndex = assignedLane;
+});
+
+const currentLaneIndex = lanes.length;
+
 
         // Controlla se la prenotazione è visibile nel periodo di 45 giorni
         if (endTime >= currentStartDate.getTime() && startTime <= endPeriod.getTime()) {
@@ -575,6 +592,7 @@ const renderCalendar = () => {
 </html>
 </body>
 </html>
+
 
 
 
