@@ -455,37 +455,48 @@ async function syncCalendars() {
 
     allReservations = [];
 
+    const ICAL_PROXY_URL = "https://corsproxy.io/?";
+
     for (const ical of icalUrls) {
         try {
-            const PROXY_URL = "https://us-central1-calendario-affitti-brevi.cloudfunctions.net/fetchIcal";
-            const response = await fetch(`${PROXY_URL}?url=${encodeURIComponent(ical.url)}`);
+            let fetchUrl = ical.url.trim();
+
+            // Se è webcal:// lo trasformiamo in https://
+            if (fetchUrl.startsWith("webcal://")) {
+                fetchUrl = "https://" + fetchUrl.slice("webcal://".length);
+            }
+
+            // Usa sempre il proxy per evitare CORS
+            if (!fetchUrl.startsWith(ICAL_PROXY_URL)) {
+                fetchUrl = ICAL_PROXY_URL + fetchUrl;
+            }
+
+            const response = await fetch(fetchUrl);
             if (!response.ok) {
-                console.error(`Errore nel fetch del calendario ${ical.name}`);
+                console.error(`Errore nel fetch del calendario ${ical.name}`, response.status);
                 continue;
             }
+
             const txt = await response.text();
             allReservations.push(...parseIcalContent(txt, ical.name));
         } catch (e) { 
             console.error(`Errore caricamento ${ical.name}:`, e); 
         }
     }
-    
+
     syncButton.textContent = "Sincronizza Ora";
     syncButton.disabled = false;
-    
-    // Resetta sempre su oggi dopo il caricamento e aggiorna la vista
+
     currentStartDate = new Date();
     currentStartDate.setHours(0, 0, 0, 0);
     renderCalendar();
-    
+
     if (allReservations.length > 0) {
         showModal("Successo", `Caricate ${allReservations.length} prenotazioni.`);
     } else {
         showModal("Nessuna prenotazione trovata", "Non sono state trovate prenotazioni nei calendari caricati.");
     }
 }
-
-
 // --- RENDER DEL CALENDARIO ORIZZONTALE CON BLOCCHI UNIFICATI ---
 const renderCalendar = () => {
     const gridEl = document.getElementById('calendar-grid');
@@ -804,6 +815,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
