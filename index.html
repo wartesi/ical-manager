@@ -647,8 +647,16 @@ const renderCalendar = () => {
         div.style.zIndex = 10 + lane;
         div.style.marginLeft = `0px`;
 
-        const HEADER_OFFSET = 90; // Spazio intestazione giorno
-        div.style.top = `${HEADER_OFFSET + (lane * 28)}px`;
+// Ogni lane è una “riga” di prenotazioni, una sotto l’altra
+const LANE_HEIGHT = 34;           // distanza verticale tra una riga e l’altra
+
+div.style.position = 'absolute';
+div.style.zIndex = 10 + lane;
+div.style.marginLeft = `0px`;
+
+// Niente HEADER_OFFSET: partiamo dall’inizio del contenitore
+div.style.top = `${lane * LANE_HEIGHT}px`;
+
 
         div.className = `reservation text-white font-semibold ${colorClass} text-center`;
         div.textContent = res.apartmentName;
@@ -823,6 +831,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
