@@ -343,21 +343,31 @@ function parseIcalContent(icalText, calendarName) {
                 const parts = line.split(':');
                 const val = parts[1];
                 currentEvent.start = parseDate(val);
-            } else if (line.startsWith('DTEND')) {
-        const parts = line.split(':');
-        const val = parts[1];
+} else if (line.startsWith('DTEND')) {
+    const parts = line.split(':');
+    const val = parts[1];
 
-        let endDate = parseDate(val);
+    let endDate = parseDate(val);
+    let checkoutDate = null;
 
-        // Se DTEND è solo data (formato tipo 20251205, come negli iCal Airbnb),
-        // significa che è il giorno di CHECK-OUT (non incluso nell'occupazione).
-        // Per il grafico vogliamo l'ultima notte, quindi usiamo il giorno prima.
-        if (val && !val.includes('T')) {
-            endDate.setDate(endDate.getDate() - 1);
-        }
+    if (val && !val.includes('T')) {
+        // Nei calendari Airbnb DTEND è spesso il giorno DOPO il check-out.
+        // Esempio: check-in 3, check-out 5 -> DTEND = 6.
+        // Allora:
+        //   - check-out reale = DTEND - 1
+        //   - ultima notte occupata = check-out - 1
 
-        currentEvent.end = endDate;
-            } else if (line.startsWith('SUMMARY')) {
+        checkoutDate = new Date(endDate);         // DTEND
+        checkoutDate.setDate(checkoutDate.getDate() - 1); // giorno di check-out reale
+
+        // fine barra = ultima notte occupata
+        endDate.setDate(endDate.getDate() - 2);
+    }
+
+    currentEvent.end = endDate;
+    currentEvent.checkout = checkoutDate; // la usiamo nel tooltip
+}
+            else if (line.startsWith('SUMMARY')) {
                 const parts = line.split(':');
                 currentEvent.summary = parts[1] || '';
             }
@@ -842,6 +852,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
