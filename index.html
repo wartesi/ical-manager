@@ -233,7 +233,577 @@
     <div class="bg-white rounded-3xl shadow-lg max-w-md w-full p-5">
         <div class="flex items-center justify-between mb-3">
             <h3 id="modal-title" class="text-sm font-semibold text-gray-800">Titolo</h3>
-            <button onclick="clos
+            <button onclick="closeModal()" class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">✕</button>
+        </div>
+        <p id="modal-content" class="text-xs text-gray-600">Contenuto</p>
+        <div class="mt-4 text-right">
+            <button onclick="closeModal()" class="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700">
+                Ok
+            </button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // IMPORT CORRETTO: Aggiunge GoogleAuthProvider, signInWithPopup, signOut
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- VARIABILI GLOBALI ---
+        let app, db, auth, userId = null;
+        let icalUrls = [];
+        let allReservations = [];
+        
+        // Impostazioni Calendario Orizzontale
+        let currentStartDate = new Date();
+        currentStartDate.setHours(0, 0, 0, 0); // Start oggi mezzanotte
+        const VIEW_DAYS = 45; // Mostra 45 giorni
+        
+        // Configurazione Firebase (SOSTITUISCI CON LE TUE CHIAVI)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8w57yFvYUv5zJq6SsotS-3kgi-jqagSI",
+            authDomain: "airbnb-calendar-hub.firebaseapp.com",
+            projectId: "airbnb-calendar-hub",
+            storageBucket: "airbnb-calendar-hub.firebasestorage.app",
+            messagingSenderId: "1099995587594",
+            appId: "1:1099995587594:web:05e7038071401005d1634f",
+            measurementId: "G-2EJGFF5RPQ"
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
+        
+        const icalListEl = document.getElementById('ical-list');
+        const syncButton = document.getElementById('sync-button');
+
+        // --- FUNZIONI DI UTILITY ---
+        window.showModal = (title, message) => {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-content').textContent = message;
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('modal').classList.add('flex');
+        };
+        window.closeModal = () => {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('modal').classList.remove('flex');
+        };
+
+        // Parsing semplice di un file iCal per estrarre eventi (start, end, summary)
+// Parsing iCal (molto semplificato) per eventi VEVENT
+function parseIcalContent(icalText, calendarName) {
+    const lines = icalText.split(/\r?\n/);
+    let currentEvent = null;
+    const events = [];
+
+    const parseDate = (val) => {
+        // Gestisce sia FORMATO con 'T' che senza (solo data)
+        // Esempi tipici: 20250125, 20250125T120000Z
+        if (!val) return null;
+
+        // Rimuove eventuale suffisso 'Z'
+        val = val.replace('Z', '');
+
+        // Se contiene 'T' => data e ora
+        if (val.includes('T')) {
+            const year  = parseInt(val.slice(0,4), 10);
+            const month = parseInt(val.slice(4,6), 10) - 1;
+            const day   = parseInt(val.slice(6,8), 10);
+            const hour  = parseInt(val.slice(9,11), 10);
+            const min   = parseInt(val.slice(11,13), 10) || 0;
+            const sec   = parseInt(val.slice(13,15), 10) || 0;
+            return new Date(year, month, day, hour, min, sec);
+        } else {
+            // Solo data
+            const year  = parseInt(val.slice(0,4), 10);
+            const month = parseInt(val.slice(4,6), 10) - 1;
+            const day   = parseInt(val.slice(6,8), 10);
+            return new Date(year, month, day);
+        }
+    };
+
+    for (let line of lines) {
+        line = line.trim();
+        if (line === 'BEGIN:VEVENT') {
+            currentEvent = {};
+        } else if (line === 'END:VEVENT') {
+            if (currentEvent && currentEvent.start && currentEvent.end) {
+                // Ignoriamo eventi che non hanno date valide
+                events.push({
+                    start: currentEvent.start,
+                    end: currentEvent.end,
+                    summary: currentEvent.summary || '',
+                    apartmentName: calendarName
+                });
+            }
+            currentEvent = null;
+        } else if (currentEvent) {
+            if (line.startsWith('DTSTART')) {
+                const parts = line.split(':');
+                const val = parts[1];
+                currentEvent.start = parseDate(val);
+            } else if (line.startsWith('DTEND')) {
+                const parts = line.split(':');
+                const val = parts[1];
+                currentEvent.end = parseDate(val);
+            } else if (line.startsWith('SUMMARY')) {
+                const parts = line.split(':');
+                currentEvent.summary = parts[1] || '';
+            }
+        }
+    }
+    return events;
+}
+
+
+// --- FUNZIONI FIRESTORE PER GESTIONE URL ICAL ---
+
+// Carica gli URL iCal dell'utente loggato
+async function loadIcalUrls() {
+    if (!userId) return;
+    icalListEl.innerHTML = '';
+    document.getElementById('loading-urls').style.display = 'block';
+
+    try {
+        const colRef = collection(db, "users", userId, "icalUrls");
+        const snapshot = await getDocs(colRef);
+        
+        icalUrls = [];
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            icalUrls.push({
+                id: docSnap.id,
+                name: data.name || 'Senza nome',
+                url: data.url
+            });
+        });
+
+        // Popola la lista
+        if (icalUrls.length === 0) {
+            icalListEl.innerHTML = '<p class="text-xs text-gray-400">Nessun calendario salvato. Aggiungine uno sopra.</p>';
+        } else {
+            icalUrls.forEach(ical => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded border';
+                div.innerHTML = `
+                    <div class="truncate pr-2">
+                        <div class="font-bold text-sm">${ical.name}</div>
+                        <div class="text-xs text-gray-400 truncate">${ical.url}</div>
+                    </div>
+                    <button onclick="deleteIcalUrl('${ical.id}')" class="text-red-500">🗑️</button>`;
+                icalListEl.appendChild(div);
+            });
+        }
+        document.getElementById('url-count').textContent = icalUrls.length;
+        document.getElementById('loading-urls').style.display = 'none';
+
+    } catch (error) {
+        console.error("Errore nel caricamento degli URL iCal:", error);
+        icalListEl.innerHTML = '<p class="text-xs text-red-500">Errore nel caricamento dei calendari.</p>';
+        document.getElementById('loading-urls').style.display = 'none';
+    }
+}
+
+// Salva un nuovo URL iCal
+async function saveIcalUrl(name, url) {
+    if (!userId) {
+        showModal("Login richiesto", "Per salvare i calendari, devi prima effettuare il login.");
+        return;
+    }
+
+    try {
+        const colRef = collection(db, "users", userId, "icalUrls");
+        await addDoc(colRef, { name, url });
+        showModal("Calendario aggiunto", "Il calendario è stato salvato correttamente.");
+        await loadIcalUrls();
+    } catch (error) {
+        console.error("Errore nel salvataggio dell'URL iCal:", error);
+        showModal("Errore", "Si è verificato un errore nel salvataggio del calendario.");
+    }
+}
+
+// Elimina un URL iCal
+window.deleteIcalUrl = async (id) => {
+    if (!userId) {
+        showModal("Login richiesto", "Non sei autenticato.");
+        return;
+    }
+    try {
+        const docRef = doc(db, "users", userId, "icalUrls", id);
+        await deleteDoc(docRef);
+        showModal("Calendario eliminato", "Il calendario è stato rimosso.");
+        await loadIcalUrls();
+    } catch (error) {
+        console.error("Errore nella cancellazione dell'URL iCal:", error);
+        showModal("Errore", "Impossibile eliminare il calendario.");
+    }
+};
+
+
+// --- FUNZIONE PER SCARICARE TUTTI GLI ICAL E POPOLARE LE PRENOTAZIONI ---
+async function syncCalendars() {
+    if (!userId) {
+        showModal("Login richiesto", "Devi effettuare il login per sincronizzare i calendari.");
+        return;
+    }
+
+    if (!icalUrls || icalUrls.length === 0) {
+        showModal("Nessun calendario", "Non ci sono calendari da sincronizzare. Aggiungi almeno un URL iCal.");
+        return;
+    }
+
+    syncButton.textContent = "Sincronizzo...";
+    syncButton.disabled = true;
+
+    allReservations = [];
+
+    for (const ical of icalUrls) {
+        try {
+            const response = await fetch(ical.url);
+            if (!response.ok) {
+                console.error(`Errore nel fetch del calendario ${ical.name}`);
+                continue;
+            }
+            const txt = await response.text();
+            allReservations.push(...parseIcalContent(txt, ical.name));
+        } catch (e) { 
+            console.error(`Errore caricamento ${ical.name}:`, e); 
+        }
+    }
+    
+    syncButton.textContent = "Sincronizza Ora";
+    syncButton.disabled = false;
+    
+    // Resetta sempre su oggi dopo il caricamento e aggiorna la vista
+    currentStartDate = new Date();
+    currentStartDate.setHours(0, 0, 0, 0);
+    renderCalendar();
+    
+    if (allReservations.length > 0) {
+        showModal("Successo", `Caricate ${allReservations.length} prenotazioni.`);
+    } else {
+        showModal("Nessuna prenotazione trovata", "Non sono state trovate prenotazioni nei calendari caricati.");
+    }
+}
+
+
+// --- RENDER DEL CALENDARIO ORIZZONTALE CON BLOCCHI UNIFICATI ---
+const renderCalendar = () => {
+    const gridEl = document.getElementById('calendar-grid');
+    gridEl.innerHTML = '';
+    gridEl.style.display = 'flex'; // Importante per orizzontale
+
+    // Titolo periodo
+    const endPeriod = new Date(currentStartDate);
+    endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
+    document.getElementById('current-period').textContent = 
+        `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Mappa per associare il timestamp del giorno alla sua posizione (indice)
+    const daysMap = new Map();
+
+    // --- 1. Genera i contenitori dei giorni (colonne) ---
+    for (let i = 0; i < VIEW_DAYS; i++) {
+        const date = new Date(currentStartDate);
+        date.setDate(date.getDate() + i);
+
+        // Mappa ogni timestamp del giorno all'indice del giorno (i)
+        daysMap.set(date.getTime(), i); 
+
+        const isToday = date.getTime() === today.getTime();
+        const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
+
+        const col = document.createElement('div');
+        // Aggiungiamo la classe 'is-today' per l'highlight
+        col.className = `day-column ${isToday ? 'bg-blue-50 is-today' : ''}`;
+
+        col.innerHTML = `
+            <div class="day-label">${dayName}</div>
+            <div class="day-number">${date.getDate()}</div>
+            <hr class="my-2">
+            <div class="reservation-container" id="res-container-${date.getTime()}">
+                </div>
+        `;
+
+        gridEl.appendChild(col);
+    } // Chiudi il ciclo dei giorni
+
+
+    // --- 2. Logica di Disegno delle Prenotazioni con Lanes Dinamici (evita sovrapposizioni) ---
+    
+    if (allReservations.length === 0) {
+        return;
+    }
+
+    // 1. Calcolo dinamico dei "lane" (righe) in base alle sovrapposizioni delle date
+    const lanes = [];
+
+    // Creiamo una copia ordinata per data di inizio
+    const sortedReservations = [...allReservations].sort((a, b) => a.start - b.start);
+
+    sortedReservations.forEach(res => {
+        let assignedLane = -1;
+
+        for (let i = 0; i < lanes.length; i++) {
+            const laneReservations = lanes[i];
+
+            // Verifica se questa prenotazione si sovrappone con qualcuna nel lane
+            const overlaps = laneReservations.some(r => {
+                // Non c'è sovrapposizione solo se una finisce prima che l'altra inizi
+                return !(res.end < r.start || res.start > r.end);
+            });
+
+            if (!overlaps) {
+                assignedLane = i;
+                laneReservations.push(res);
+                break;
+            }
+        }
+
+        // Se non abbiamo trovato un lane libero, ne creiamo uno nuovo
+        if (assignedLane === -1) {
+            assignedLane = lanes.length;
+            lanes.push([res]);
+        }
+
+        // Salviamo il lane sulla prenotazione
+        res.laneIndex = assignedLane;
+    });
+
+    const totalLanes = lanes.length;
+
+    // 2. Disegno delle barre delle prenotazioni nella finestra visibile
+    const firstVisibleTime = currentStartDate.getTime();
+    const lastVisibleDate = new Date(currentStartDate);
+    lastVisibleDate.setDate(lastVisibleDate.getDate() + VIEW_DAYS - 1);
+    const lastVisibleTime = lastVisibleDate.getTime();
+
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    sortedReservations.forEach(res => {
+        const startTime = res.start.getTime();
+        const endTime = res.end.getTime();
+
+        // Se completamente fuori dalla finestra visibile, salta
+        if (endTime < firstVisibleTime || startTime > lastVisibleTime) {
+            return;
+        }
+
+        // Limitiamo l'intervallo alla finestra visibile
+        const clampedStart = Math.max(startTime, firstVisibleTime);
+        const clampedEnd = Math.min(endTime, lastVisibleTime);
+
+        const startIndex = Math.floor((clampedStart - firstVisibleTime) / oneDayMs);
+        const endIndex = Math.floor((clampedEnd - firstVisibleTime) / oneDayMs);
+        const durationDays = Math.max(1, endIndex - startIndex + 1);
+
+        const lane = res.laneIndex;
+
+        // Contenitore del primo giorno visibile della prenotazione
+        const dateOfFirstVisibleDay = new Date(currentStartDate);
+        dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
+        const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
+
+        if (!resContainer) {
+            return;
+        }
+
+        const div = document.createElement('div');
+
+        const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+        const colorClass = colors[lane % colors.length];
+
+        const columnWidth = 140;
+        const totalWidth = (columnWidth * durationDays) - 1;
+
+        const checkoutDate = new Date(res.end.getTime());
+        checkoutDate.setDate(checkoutDate.getDate() + 1);
+
+        const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
+
+        div.style.width = `${totalWidth}px`;
+        div.style.position = 'absolute';
+        div.style.zIndex = 10 + lane;
+        div.style.marginLeft = `0px`;
+
+        const HEADER_OFFSET = 90; // Spazio intestazione giorno
+        div.style.top = `${HEADER_OFFSET + (lane * 28)}px`;
+
+        div.className = `reservation text-white font-semibold ${colorClass} text-center`;
+        div.textContent = res.apartmentName;
+        div.title = tooltipText;
+
+        resContainer.appendChild(div);
+    });
+
+    // 3. Forzare l'altezza minima delle colonne in base al numero di lane
+    const BASE_HEIGHT = 90; // Altezza intestazione
+    const LANE_HEIGHT = 28; // Altezza per riga
+    const minRequiredHeight = BASE_HEIGHT + (totalLanes * LANE_HEIGHT) + 20; // 20px di padding finale
+
+    gridEl.style.minHeight = `${minRequiredHeight}px`;
+    document.querySelectorAll('.day-column').forEach(col => {
+        col.style.minHeight = `${minRequiredHeight}px`;
+    });
+
+
+};
+
+// --- LOGICA AUTENTICAZIONE UTENTE ---
+window.signInWithGoogle = async () => {
+    try {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        console.error("Errore di login:", error);
+        showModal("Errore di login", "Si è verificato un errore durante il login con Google.");
+    }
+};
+
+window.signOutUser = async () => {
+    try {
+        await signOut(auth);
+        showModal("Logout effettuato", "Hai effettuato correttamente il logout.");
+        // Resettiamo anche la UI dei calendari
+        icalUrls = [];
+        icalListEl.innerHTML = '<p class="text-xs text-gray-400">Per salvare i calendari, esegui il Login/Registrazione.</p>';
+        document.getElementById('url-count').textContent = '0';
+        allReservations = [];
+        renderCalendar(); // Aggiorna per mostrare il calendario vuoto
+    } catch (error) {
+        console.error("Errore di Logout:", error);
+    }
+};
+
+const renderAuthButton = (user) => {
+    const authButtonsEl = document.getElementById('auth-buttons');
+    authButtonsEl.innerHTML = '';
+
+    if (user) {
+        const userName = user.displayName || 'Utente';
+        const initials = userName.charAt(0).toUpperCase();
+
+        const avatar = document.createElement('div');
+        avatar.className = 'h-8 w-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-semibold';
+        avatar.textContent = initials;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'text-xs text-gray-700';
+        nameSpan.textContent = userName;
+
+        const logoutBtn = document.createElement('button');
+        logoutBtn.className = 'text-xs px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200';
+        logoutBtn.textContent = 'Logout';
+        logoutBtn.onclick = () => window.signOutUser();
+
+        authButtonsEl.appendChild(avatar);
+        authButtonsEl.appendChild(nameSpan);
+        authButtonsEl.appendChild(logoutBtn);
+    } else {
+        const loginBtn = document.createElement('button');
+        loginBtn.className = 'inline-flex items-center px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-sm';
+        loginBtn.innerHTML = '<span class="mr-1">🔑</span> Login con Google';
+        loginBtn.onclick = () => window.signInWithGoogle();
+
+        authButtonsEl.appendChild(loginBtn);
+    }
+};
+
+
+// --- INIZIALIZZAZIONE FIREBASE E LISTENER DI STATO UTENTE ---
+(async () => {
+    try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        // Se abbiamo un token di autenticazione lato server, facciamo signInWithCustomToken
+        if (initialAuthToken) {
+            await signInWithCustomToken(auth, initialAuthToken);
+        } else {
+            // NON USIAMO signInAnonymously: attendiamo il login
+        }
+        
+        onAuthStateChanged(auth, u => {
+            userId = null; // Resetta l'ID
+            if(u) {
+                userId = u.uid;
+                // Solo se non è anonimo carichiamo i dati
+                if (!u.isAnonymous) {
+                    loadIcalUrls();
+                } else {
+                    // Se è anonimo (non dovrebbe succedere se non forzato), mostriamo solo il pulsante di login
+                    icalListEl.innerHTML = '<p class="text-xs text-gray-400">Per salvare i calendari, esegui il Login/Registrazione.</p>';
+                    document.getElementById('url-count').textContent = '0';
+                    document.getElementById('loading-urls').style.display = 'none';
+                }
+            } else {
+                 // Utente disconnesso o anonimo: nascondi i dati e mostra il placeholder
+                 icalUrls = []; 
+                 allReservations = [];
+                 icalListEl.innerHTML = '<p class="text-xs text-gray-400">Per salvare i calendari, esegui il Login/Registrazione.</p>';
+                 document.getElementById('url-count').textContent = '0';
+                 document.getElementById('loading-urls').style.display = 'none';
+            }
+            renderAuthButton(u);
+            renderCalendar(); // Per ridisegnare eventualmente il calendario (senza prenotazioni)
+        });
+
+        console.log("Firebase inizializzato.");
+    } catch (error) {
+        console.error("Errore inizializzazione Firebase:", error);
+        showModal("Errore Firebase", "Impossibile inizializzare il backend. Controlla la configurazione.");
+    }
+})();
+
+
+// --- EVENTI UI ---
+document.getElementById('add-ical-btn').addEventListener('click', async () => {
+    const nameInput = document.getElementById('ical-name');
+    const urlInput = document.getElementById('ical-url');
+
+    const name = (nameInput.value || '').trim();
+    const url = (urlInput.value || '').trim();
+
+    if (!name || !url) {
+        showModal("Dati mancanti", "Inserisci sia il nome che l'URL del calendario.");
+        return;
+    }
+
+    await saveIcalUrl(name, url);
+    nameInput.value = '';
+    urlInput.value = '';
+});
+
+syncButton.addEventListener('click', () => {
+    syncCalendars();
+});
+
+document.getElementById('prev-period').addEventListener('click', () => {
+    currentStartDate.setDate(currentStartDate.getDate() - VIEW_DAYS);
+    renderCalendar();
+});
+
+document.getElementById('next-period').addEventListener('click', () => {
+    currentStartDate.setDate(currentStartDate.getDate() + VIEW_DAYS);
+    renderCalendar();
+});
+
+document.getElementById('today-btn').addEventListener('click', () => {
+    currentStartDate = new Date();
+    currentStartDate.setHours(0, 0, 0, 0);
+    renderCalendar();
+});
+
+// Primo render (a vuoto)
+renderCalendar();
+
+</script>
+
+</body>
+</html>
+
 
 
 
