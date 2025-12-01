@@ -66,20 +66,21 @@
         }
         
         /* Prenotazione (la barra che si estende) */
-    .reservation {
-        height: 30px;                 /* barra più alta */
-        border-radius: 9999px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.7rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.12);
-        cursor: pointer;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 2px;           /* piccolo distacco fra le righe */
-        }
+.reservation {
+    height: 30px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;          /* più aria sotto */
+    border: 2px solid #fff;      /* sottile bordo bianco di separazione */
+}
 
 
         .reservation:hover {
@@ -831,6 +832,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
