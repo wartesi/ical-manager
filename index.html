@@ -327,23 +327,25 @@ function parseIcalContent(icalText, calendarName) {
         line = line.trim();
         if (line === 'BEGIN:VEVENT') {
             currentEvent = {};
-        } else if (line === 'END:VEVENT') {
-            if (currentEvent && currentEvent.start && currentEvent.end) {
-                // Ignoriamo eventi che non hanno date valide
-                events.push({
-                    start: currentEvent.start,
-                    end: currentEvent.end,
-                    summary: currentEvent.summary || '',
-                    apartmentName: calendarName
-                });
-            }
-            currentEvent = null;
-        } else if (currentEvent) {
+} else if (line === 'END:VEVENT') {
+    if (currentEvent && currentEvent.start && currentEvent.end) {
+        events.push({
+            start: currentEvent.start,
+            end: currentEvent.end,                   // ultima notte
+            checkout: currentEvent.checkout || null, // giorno di check-out reale (se calcolato)
+            summary: currentEvent.summary || '',
+            apartmentName: calendarName
+        });
+    }
+    currentEvent = null;
+}
+        else if (currentEvent) {
             if (line.startsWith('DTSTART')) {
                 const parts = line.split(':');
                 const val = parts[1];
                 currentEvent.start = parseDate(val);
-} else if (line.startsWith('DTEND')) {
+}
+            else if (line.startsWith('DTEND')) {
     const parts = line.split(':');
     const val = parts[1];
 
@@ -855,6 +857,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
