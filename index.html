@@ -344,9 +344,19 @@ function parseIcalContent(icalText, calendarName) {
                 const val = parts[1];
                 currentEvent.start = parseDate(val);
             } else if (line.startsWith('DTEND')) {
-                const parts = line.split(':');
-                const val = parts[1];
-                currentEvent.end = parseDate(val);
+        const parts = line.split(':');
+        const val = parts[1];
+
+        let endDate = parseDate(val);
+
+        // Se DTEND è solo data (formato tipo 20251205, come negli iCal Airbnb),
+        // significa che è il giorno di CHECK-OUT (non incluso nell'occupazione).
+        // Per il grafico vogliamo l'ultima notte, quindi usiamo il giorno prima.
+        if (val && !val.includes('T')) {
+            endDate.setDate(endDate.getDate() - 1);
+        }
+
+        currentEvent.end = endDate;
             } else if (line.startsWith('SUMMARY')) {
                 const parts = line.split(':');
                 currentEvent.summary = parts[1] || '';
@@ -832,6 +842,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
