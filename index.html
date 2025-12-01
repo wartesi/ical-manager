@@ -12,14 +12,14 @@
         body { font-family: 'Inter', sans-serif; }
         
 /* STILI PER CALENDARIO ORIZZONTALE */
-        #calendar-container {
-            overflow-x: auto; /* Permette lo scroll laterale */
-            white-space: nowrap; /* I giorni restano in riga */
-            border: 1px solid #e5e7eb;
-            border-radius: 0.75rem;
-            background-color: #f9fafb;
-            font-size: 0; /* Rimuove lo spazio tra gli inline-block */
-        }
+#calendar-container {
+    overflow-x: auto; /* Permette lo scroll laterale */
+    white-space: nowrap; /* I giorni restano in riga */
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    background-color: #f9fafb;
+    font-size: 0; /* CRUCIALE: Rimuove lo spazio tra gli inline-block */
+}
 
         /* Colonna del singolo giorno */
         .day-column {
@@ -575,6 +575,7 @@ const renderCalendar = () => {
 </html>
 </body>
 </html>
+
 
 
 
