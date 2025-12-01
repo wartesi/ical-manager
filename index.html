@@ -1,127 +1,108 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <title>Airbnb Multi-Calendar Viewer</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-       @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600;700&display=swap');
-       body {
-           font-family: 'Poppins', sans-serif;
-           background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-       }
-       /* Stile per la scrollbar orizzontale */
-       .scrollbar-thin {
-           scrollbar-width: thin; /* Firefox */
-       }
-       .scrollbar-thin::-webkit-scrollbar {
-           height: 8px; /* Altezza della scrollbar */
-       }
-       .scrollbar-thin::-webkit-scrollbar-thumb {
-           background-color: rgba(156, 163, 175, 0.7); /* Colore del thumb */
-           border-radius: 9999px;
-       }
-       .scrollbar-thin::-webkit-scrollbar-track {
-           background: transparent; /* Sfondo della track */
-       }
-   </style>
+    <meta charset="UTF-8" />
+    <title>Airbnb Calendar Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-   <style>
-        /* Colonna del giorno nello scheduler orizzontale */
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* Contenitore scroll orizzontale del calendario */
+        #calendar-container {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        /* Colonna di un giorno */
         .day-column {
-            display: inline-block;
-            width: 160px; /* Larghezza fissa di ogni giorno */
-            box-sizing: border-box;
+            min-width: 160px;
             border-right: 1px solid #e5e7eb;
+            padding: 8px 6px 10px 6px;
             position: relative;
-            vertical-align: top;
             background-color: #ffffff;
-            min-height: 120px; /* Garantisce spazio per le prenotazioni */
+        }
+
+        .day-column:last-child {
+            border-right: none;
         }
 
         .day-column.is-today {
-            background-color: #e0f2fe; /* Azzurro chiaro per il giorno corrente */
+            border-top: 3px solid #3b82f6;
+            background-color: #eff6ff;
         }
 
         .day-label {
-            font-size: 0.8rem;
+            font-size: 11px;
             font-weight: 600;
-            color: #4b5563;
+            text-align: center;
             text-transform: uppercase;
+            color: #6b7280;
+            letter-spacing: 0.03em;
+            margin-bottom: 2px;
         }
 
         .day-number {
-            font-size: 1.4rem;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 6px;
             color: #111827;
         }
 
+        /* Contenitore delle prenotazioni di un giorno */
         .reservation-container {
             position: relative;
             width: 100%;
-            padding: 0; 
-            margin-bottom: 4px;
-            min-height: 25px; /* Altezza minima del contenitore, cresce se servono più righe */
-        }
-        
-        /* Prenotazione (la barra che si estende) */
-.reservation {
-    height: 30px;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;          /* più aria sotto */
-    border: 2px solid #fff;      /* sottile bordo bianco di separazione */
-}
-
-
-        .reservation:hover {
-            transform: scale(1.02);
-            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.16);
+            min-height: 80px; /* base, poi la alziamo da JS in base ai lane */
         }
 
-        /* Tooltip per le prenotazioni */
-        .reservation[title] {
-            position: relative;
+        /* Barra prenotazione */
+        .reservation {
+            height: 32px;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 11px;
+            line-height: 1.1;
+            cursor: help;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+            border: 1px solid rgba(15, 23, 42, 0.08);
         }
-   </style>
+    </style>
 </head>
-<body class="min-h-screen">
+<body class="bg-gray-50 min-h-screen">
 
-<div class="min-h-screen flex flex-col">
-
-    <!-- Navbar -->
-    <nav class="bg-white shadow-sm sticky top-0 z-30">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="h-9 w-9 rounded-2xl bg-indigo-500 flex items-center justify-center text-white font-bold">
+<div class="min-h-screen">
+    <!-- HEADER -->
+    <header class="border-b bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
                     A
                 </div>
                 <div>
-                    <div class="font-semibold text-gray-800 text-sm tracking-tight">Airbnb Calendar Hub</div>
-                    <div class="text-xs text-gray-400 -mt-0.5">Sincronizza tutti i tuoi calendari in un'unica vista</div>
+                    <h1 class="text-sm sm:text-base font-semibold text-gray-900">Airbnb Calendar Hub</h1>
+                    <p class="text-[11px] text-gray-500 leading-tight">
+                        Sincronizza tutti i tuoi calendari in un'unica vista
+                    </p>
                 </div>
             </div>
 
-            <div id="auth-buttons" class="flex items-center space-x-2 text-sm">
-                <!-- Verrà popolato dinamicamente -->
+            <div id="auth-buttons" class="flex items-center space-x-2 text-xs">
+                <!-- Riempito da JS -->
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Contenuto principale -->
-<main class="flex-1 w-full max-w-none px-6 py-6">
+    <!-- MAIN -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="space-y-6">
-            <!-- Colonna sinistra: Gestione iCal -->
+            <!-- SEZIONE SINISTRA: GESTIONE ICAL -->
             <section class="bg-white shadow-lg rounded-2xl p-4 lg:p-6 space-y-4 w-full">
                 <div class="bg-white rounded-3xl shadow-sm p-5 border border-gray-100">
                     <h2 class="text-sm font-semibold text-gray-800 flex items-center justify-between">
@@ -129,20 +110,26 @@
                         <span class="px-2 py-0.5 rounded-full text-[11px] bg-indigo-50 text-indigo-600" id="url-count">0</span>
                     </h2>
                     <p class="mt-1 text-xs text-gray-500">
-                        Aggiungi uno o più URL iCal dei tuoi appartamenti (Airbnb, Booking, siti propri) e visualizza tutte le prenotazioni in una timeline unica.
+                        Aggiungi uno o più URL iCal dei tuoi appartamenti (Airbnb, Booking, siti propri) e visualizza tutte le
+                        prenotazioni in una timeline unica.
                     </p>
 
                     <div class="mt-4 space-y-2">
                         <label class="text-xs font-medium text-gray-600">Nome calendario (es. "Appartamento Centro")</label>
-                        <input id="ical-name" type="text" class="w-full rounded-2xl border-gray-200 text-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Nome identificativo..." />
+                        <input id="ical-name" type="text"
+                               class="w-full rounded-2xl border-gray-200 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Nome identificativo..." />
                     </div>
 
                     <div class="mt-3 space-y-2">
                         <label class="text-xs font-medium text-gray-600">URL iCal</label>
-                        <input id="ical-url" type="url" class="w-full rounded-2xl border-gray-200 text-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://..." />
+                        <input id="ical-url" type="url"
+                               class="w-full rounded-2xl border-gray-200 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="https://..." />
                     </div>
 
-                    <button id="add-ical-btn" class="mt-4 w-full inline-flex justify-center items-center px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-sm">
+                    <button id="add-ical-btn"
+                            class="mt-4 w-full inline-flex justify-center items-center px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-sm">
                         ➕ Aggiungi Calendario
                     </button>
 
@@ -154,13 +141,14 @@
                 <div class="bg-white rounded-3xl shadow-sm p-4 border border-gray-100">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-xs font-semibold text-gray-800">Calendari Salvati</h3>
-                        <button id="sync-button" class="text-[11px] px-3 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 hover:bg-green-100">
+                        <button id="sync-button"
+                                class="text-[11px] px-3 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 hover:bg-green-100">
                             Sincronizza Ora
                         </button>
                     </div>
                     <div id="loading-urls" class="text-xs text-gray-400">Caricamento in corso...</div>
                     <div id="ical-list" class="space-y-2 max-h-60 overflow-y-auto text-xs">
-                        <!-- Dynamically populated -->
+                        <!-- Popolato da JS -->
                     </div>
                 </div>
 
@@ -174,46 +162,58 @@
                 </div>
             </section>
 
-            <!-- Colonna destra: Calendario -->
+            <!-- SEZIONE DESTRA: CALENDARIO -->
             <section class="bg-white shadow-lg rounded-2xl p-4 lg:p-6 space-y-4 w-full">
-                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <div>
-                            <div class="text-xs text-gray-400 uppercase tracking-wide">Periodo visualizzato</div>
-                            <div id="current-period" class="text-sm font-semibold text-gray-800">--</div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <button id="prev-period" class="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 text-lg">
-                                ‹
-                            </button>
-                            <button id="today-btn" class="px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-medium text-gray-700">
-                                Oggi
-                            </button>
-                            <button id="next-period" class="h-8 w-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 text-lg">
-                                ›
-                            </button>
-                        </div>
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-800">Periodo Visualizzato</h2>
+                        <p class="text-[11px] text-gray-400">
+                            Scorri orizzontalmente per vedere più mesi.
+                        </p>
                     </div>
-
-                    <div class="flex items-center justify-between mb-2 text-[11px] text-gray-400">
-                        <div class="flex items-center space-x-3">
-                            <span class="inline-flex items-center">
-                                <span class="h-2 w-2 rounded-full bg-red-500 mr-1"></span> Calendario 1
-                            </span>
-                            <span class="inline-flex items-center">
-                                <span class="h-2 w-2 rounded-full bg-green-500 mr-1"></span> Calendario 2
-                            </span>
-                            <span class="inline-flex items-center">
-                                <span class="h-2 w-2 rounded-full bg-indigo-500 mr-1"></span> Calendario 3
-                            </span>
-                        </div>
-                        <div class="italic text-[10px] text-gray-400">Passa il mouse sulle barre per i dettagli</div>
+                    <div class="flex items-center space-x-2">
+                        <button id="prev-period" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <button id="today-btn"
+                                class="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700">
+                            Oggi
+                        </button>
+                        <button id="next-period" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
                     </div>
+                </div>
 
-                    <div id="calendar-wrapper" class="mt-2 border border-gray-100 rounded-2xl overflow-x-auto scrollbar-thin bg-gray-50">
-                        <div id="calendar-grid" class="relative whitespace-nowrap min-h-[160px]">
-                            <!-- Giorni e prenotazioni verranno inseriti qui -->
-                        </div>
+                <div class="flex items-center justify-between mb-3">
+                    <span id="current-period" class="text-sm font-semibold text-gray-800">
+                        <!-- impostato da JS -->
+                    </span>
+                    <div class="flex items-center space-x-3 text-[11px] text-gray-500">
+                        <span class="inline-flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-red-500 mr-1"></span> Calendario 1
+                        </span>
+                        <span class="inline-flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-green-500 mr-1"></span> Calendario 2
+                        </span>
+                        <span class="inline-flex items-center">
+                            <span class="w-3 h-3 rounded-full bg-indigo-500 mr-1"></span> Calendario 3
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Calendario orizzontale -->
+                <div id="calendar-container" class="rounded-2xl border border-gray-100 bg-gray-50">
+                    <div id="calendar-grid" class="relative flex">
+                        <p class="w-full text-center py-8 text-gray-400 text-xs" id="calendar-placeholder">
+                            Premi "Sincronizza Ora" per caricare le prenotazioni.
+                        </p>
                     </div>
                 </div>
 
@@ -231,16 +231,20 @@
     </main>
 </div>
 
-<!-- Modal semplice -->
+<!-- MODAL -->
 <div id="modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center hidden z-40">
     <div class="bg-white rounded-3xl shadow-lg max-w-md w-full p-5">
         <div class="flex items-center justify-between mb-3">
             <h3 id="modal-title" class="text-sm font-semibold text-gray-800">Titolo</h3>
-            <button onclick="closeModal()" class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">✕</button>
+            <button onclick="closeModal()"
+                    class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">
+                ✕
+            </button>
         </div>
         <p id="modal-content" class="text-xs text-gray-600">Contenuto</p>
         <div class="mt-4 text-right">
-            <button onclick="closeModal()" class="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700">
+            <button onclick="closeModal()"
+                    class="px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700">
                 Ok
             </button>
         </div>
@@ -248,619 +252,561 @@
 </div>
 
 <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // IMPORT CORRETTO: Aggiunge GoogleAuthProvider, signInWithPopup, signOut
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // --- VARIABILI GLOBALI ---
-        let app, db, auth, userId = null;
-        let icalUrls = [];
-        let allReservations = [];
-        
-        // Impostazioni Calendario Orizzontale
-        let currentStartDate = new Date();
-        currentStartDate.setHours(0, 0, 0, 0); // Start oggi mezzanotte
-        const VIEW_DAYS = 365; // Mostra 45 giorni
-        
-        // Configurazione Firebase (SOSTITUISCI CON LE TUE CHIAVI)
-const firebaseConfig = {
-  apiKey: "AIzaSyA9eZ39CpSSCMF6bORHqOAD39BKqHhLCuk",
-  authDomain: "calendario-affitti-brevi.firebaseapp.com",
-  projectId: "calendario-affitti-brevi",
-  storageBucket: "calendario-affitti-brevi.firebasestorage.app",
-  messagingSenderId: "338062221076",
-  appId: "1:338062221076:web:02d734c5a712a26a38ac01",
-  measurementId: "G-2EJGFF5RPQ"
-};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
-        
-        const icalListEl = document.getElementById('ical-list');
-        const syncButton = document.getElementById('sync-button');
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        onAuthStateChanged,
+        signOut,
+        signInWithCustomToken
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+        getFirestore,
+        collection,
+        addDoc,
+        getDocs,
+        deleteDoc,
+        doc
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- FUNZIONI DI UTILITY ---
-        window.showModal = (title, message) => {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-content').textContent = message;
-            document.getElementById('modal').classList.remove('hidden');
-            document.getElementById('modal').classList.add('flex');
-        };
-        window.closeModal = () => {
-            document.getElementById('modal').classList.add('hidden');
-            document.getElementById('modal').classList.remove('flex');
-        };
+    // --- VARIABILI GLOBALI ---
+    let app, db, auth, userId = null;
+    let icalUrls = [];
+    let allReservations = [];
 
-        // Parsing semplice di un file iCal per estrarre eventi (start, end, summary)
-// Parsing iCal (molto semplificato) per eventi VEVENT
-function parseIcalContent(icalText, calendarName) {
-    const lines = icalText.split(/\r?\n/);
-    let currentEvent = null;
-    const events = [];
+    let currentStartDate = new Date();
+    currentStartDate.setHours(0, 0, 0, 0);
+    const VIEW_DAYS = 300;               // ~10 mesi
+    const ICAL_PROXY_URL = "https://corsproxy.io/?";
 
-    const parseDate = (val) => {
-        // Gestisce sia FORMATO con 'T' che senza (solo data)
-        // Esempi tipici: 20250125, 20250125T120000Z
+    const firebaseConfig = {
+        apiKey: "AIzaSyA9eZ39CpSSCMF6bORHqOAD39BKqHhLCuk",
+        authDomain: "calendario-affitti-brevi.firebaseapp.com",
+        projectId: "calendario-affitti-brevi",
+        storageBucket: "calendario-affitti-brevi.firebasestorage.app",
+        messagingSenderId: "338062221076",
+        appId: "1:338062221076:web:02d734c5a712a26a38ac01",
+        measurementId: "G-2EJGFF5RPQ"
+    };
+
+    const initialAuthToken = typeof __initial_auth_token !== "undefined" ? __initial_auth_token : null;
+
+    const icalListEl = document.getElementById("ical-list");
+    const syncButton = document.getElementById("sync-button");
+
+    // --- MODAL ---
+    window.showModal = (title, message) => {
+        document.getElementById("modal-title").textContent = title;
+        document.getElementById("modal-content").textContent = message;
+        document.getElementById("modal").classList.remove("hidden");
+        document.getElementById("modal").classList.add("flex");
+    };
+    window.closeModal = () => {
+        document.getElementById("modal").classList.add("hidden");
+        document.getElementById("modal").classList.remove("flex");
+    };
+
+    // --- PARSING ICAL ---
+    function parseDate(val) {
+        // Gestisce sia YYYYMMDD che YYYYMMDDTHHMMSSZ
         if (!val) return null;
-
-        // Rimuove eventuale suffisso 'Z'
-        val = val.replace('Z', '');
-
-        // Se contiene 'T' => data e ora
-        if (val.includes('T')) {
-            const year  = parseInt(val.slice(0,4), 10);
-            const month = parseInt(val.slice(4,6), 10) - 1;
-            const day   = parseInt(val.slice(6,8), 10);
-            const hour  = parseInt(val.slice(9,11), 10);
-            const min   = parseInt(val.slice(11,13), 10) || 0;
-            const sec   = parseInt(val.slice(13,15), 10) || 0;
+        if (val.length >= 15 && val.includes("T")) {
+            const year = parseInt(val.slice(0, 4), 10);
+            const month = parseInt(val.slice(4, 6), 10) - 1;
+            const day = parseInt(val.slice(6, 8), 10);
+            const hour = parseInt(val.slice(9, 11), 10) || 0;
+            const min = parseInt(val.slice(11, 13), 10) || 0;
+            const sec = parseInt(val.slice(13, 15), 10) || 0;
             return new Date(year, month, day, hour, min, sec);
         } else {
-            // Solo data
-            const year  = parseInt(val.slice(0,4), 10);
-            const month = parseInt(val.slice(4,6), 10) - 1;
-            const day   = parseInt(val.slice(6,8), 10);
-            return new Date(year, month, day);
+            const year = parseInt(val.slice(0, 4), 10);
+            const month = parseInt(val.slice(4, 6), 10) - 1;
+            const day = parseInt(val.slice(6, 8), 10);
+            const d = new Date(year, month, day);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+    }
+
+    function parseIcalContent(icsContent, calendarName) {
+        const events = [];
+        const lines = icsContent.split(/\r?\n/);
+        let currentEvent = null;
+
+        for (let line of lines) {
+            line = line.trim();
+            if (line === "BEGIN:VEVENT") {
+                currentEvent = {};
+            } else if (line === "END:VEVENT") {
+                if (currentEvent && currentEvent.start && currentEvent.end) {
+                    events.push({
+                        start: currentEvent.start,
+                        end: currentEvent.end,
+                        summary: currentEvent.summary || "",
+                        apartmentName: calendarName
+                    });
+                }
+                currentEvent = null;
+            } else if (currentEvent) {
+                if (line.startsWith("DTSTART")) {
+                    const parts = line.split(":");
+                    const val = parts[1];
+                    currentEvent.start = parseDate(val);
+                    if (currentEvent.start) currentEvent.start.setHours(0, 0, 0, 0);
+                } else if (line.startsWith("DTEND")) {
+                    const parts = line.split(":");
+                    const val = parts[1];
+                    let endDate = parseDate(val);
+
+                    // Se DTEND è solo data, è il giorno di CHECKOUT (escluso).
+                    // Per la visualizzazione occupiamo fino alla notte prima.
+                    if (val && !val.includes("T") && endDate) {
+                        endDate.setDate(endDate.getDate() - 1);
+                    }
+                    if (endDate) endDate.setHours(0, 0, 0, 0);
+                    currentEvent.end = endDate;
+                } else if (line.startsWith("SUMMARY")) {
+                    const parts = line.split(":");
+                    currentEvent.summary = parts.slice(1).join(":") || "";
+                }
+            }
+        }
+        return events;
+    }
+
+    // --- FIRESTORE: URL iCal per utente ---
+    async function loadIcalUrls() {
+        if (!userId) return;
+        icalListEl.innerHTML = "";
+        document.getElementById("loading-urls").style.display = "block";
+
+        try {
+            const colRef = collection(db, "users", userId, "icalUrls");
+            const snapshot = await getDocs(colRef);
+
+            icalUrls = [];
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                icalUrls.push({
+                    id: docSnap.id,
+                    name: data.name || "Senza nome",
+                    url: data.url
+                });
+            });
+
+            if (icalUrls.length === 0) {
+                icalListEl.innerHTML =
+                    '<p class="text-xs text-gray-400">Nessun calendario salvato. Aggiungine uno sopra.</p>';
+            } else {
+                icalUrls.forEach(ical => {
+                    const div = document.createElement("div");
+                    div.className =
+                        "flex justify-between items-center p-3 bg-gray-50 rounded border border-gray-200";
+                    div.innerHTML = `
+                        <div class="truncate pr-2">
+                            <div class="font-bold text-xs">${ical.name}</div>
+                            <div class="text-[11px] text-gray-400 truncate">${ical.url}</div>
+                        </div>
+                        <button onclick="deleteIcalUrl('${ical.id}')" class="text-red-500 text-sm">🗑️</button>
+                    `;
+                    icalListEl.appendChild(div);
+                });
+            }
+            document.getElementById("url-count").textContent = icalUrls.length.toString();
+            document.getElementById("loading-urls").style.display = "none";
+        } catch (error) {
+            console.error("Errore nel caricamento degli URL iCal:", error);
+            icalListEl.innerHTML =
+                '<p class="text-xs text-red-500">Errore nel caricamento dei calendari.</p>';
+            document.getElementById("loading-urls").style.display = "none";
+        }
+    }
+
+    async function saveIcalUrl(name, url) {
+        if (!userId) {
+            showModal("Login richiesto", "Per salvare i calendari devi prima effettuare il login.");
+            return;
+        }
+        try {
+            // Normalizza webcal:// in https://
+            if (url.startsWith("webcal://")) {
+                url = "https://" + url.slice("webcal://".length);
+            }
+
+            const colRef = collection(db, "users", userId, "icalUrls");
+            await addDoc(colRef, { name, url });
+            showModal("Calendario aggiunto", "Il calendario è stato salvato correttamente.");
+            await loadIcalUrls();
+        } catch (error) {
+            console.error("Errore nel salvataggio dell'URL iCal:", error);
+            showModal("Errore", "Si è verificato un errore nel salvataggio del calendario.");
+        }
+    }
+
+    window.deleteIcalUrl = async (id) => {
+        if (!userId) {
+            showModal("Login richiesto", "Non sei autenticato.");
+            return;
+        }
+        try {
+            const ref = doc(db, "users", userId, "icalUrls", id);
+            await deleteDoc(ref);
+            showModal("Calendario eliminato", "Il calendario è stato rimosso.");
+            await loadIcalUrls();
+        } catch (error) {
+            console.error("Errore nella cancellazione dell'URL iCal:", error);
+            showModal("Errore", "Impossibile eliminare il calendario.");
         }
     };
 
-    for (let line of lines) {
-        line = line.trim();
-        if (line === 'BEGIN:VEVENT') {
-            currentEvent = {};
-} else if (line === 'END:VEVENT') {
-    if (currentEvent && currentEvent.start && currentEvent.end) {
-        events.push({
-            start: currentEvent.start,
-            end: currentEvent.end,                   // ultima notte
-            checkout: currentEvent.checkout || null, // giorno di check-out reale (se calcolato)
-            summary: currentEvent.summary || '',
-            apartmentName: calendarName
-        });
-    }
-    currentEvent = null;
-}
-        else if (currentEvent) {
-            if (line.startsWith('DTSTART')) {
-                const parts = line.split(':');
-                const val = parts[1];
-                currentEvent.start = parseDate(val);
-}
-            else if (line.startsWith('DTEND')) {
-    const parts = line.split(':');
-    const val = parts[1];
-
-    let endDate = parseDate(val);
-    let checkoutDate = null;
-
-    if (val && !val.includes('T')) {
-        // Nei calendari Airbnb DTEND è spesso il giorno DOPO il check-out.
-        // Esempio: check-in 3, check-out 5 -> DTEND = 6.
-        // Allora:
-        //   - check-out reale = DTEND - 1
-        //   - ultima notte occupata = check-out - 1
-
-        checkoutDate = new Date(endDate);         // DTEND
-        checkoutDate.setDate(checkoutDate.getDate() - 1); // giorno di check-out reale
-
-        // fine barra = ultima notte occupata
-        endDate.setDate(endDate.getDate() - 2);
-    }
-
-    currentEvent.end = endDate;
-    currentEvent.checkout = checkoutDate; // la usiamo nel tooltip
-}
-
-
-        currentEvent.end = endDate;
-            } else if (line.startsWith('SUMMARY')) {
-                const parts = line.split(':');
-                currentEvent.summary = parts[1] || '';
-            }
+    // --- SYNC ICAL & POPOLA PRENOTAZIONI ---
+    async function syncCalendars() {
+        if (!userId) {
+            showModal("Login richiesto", "Devi effettuare il login per sincronizzare i calendari.");
+            return;
         }
-    }
-    return events;
-}
-
-
-// --- FUNZIONI FIRESTORE PER GESTIONE URL ICAL ---
-
-// Carica gli URL iCal dell'utente loggato
-async function loadIcalUrls() {
-    if (!userId) return;
-    icalListEl.innerHTML = '';
-    document.getElementById('loading-urls').style.display = 'block';
-
-    try {
-        const colRef = collection(db, "users", userId, "icalUrls");
-        const snapshot = await getDocs(colRef);
-        
-        icalUrls = [];
-        snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            icalUrls.push({
-                id: docSnap.id,
-                name: data.name || 'Senza nome',
-                url: data.url
-            });
-        });
-
-        // Popola la lista
-        if (icalUrls.length === 0) {
-            icalListEl.innerHTML = '<p class="text-xs text-gray-400">Nessun calendario salvato. Aggiungine uno sopra.</p>';
-        } else {
-            icalUrls.forEach(ical => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded border';
-                div.innerHTML = `
-                    <div class="truncate pr-2">
-                        <div class="font-bold text-sm">${ical.name}</div>
-                        <div class="text-xs text-gray-400 truncate">${ical.url}</div>
-                    </div>
-                    <button onclick="deleteIcalUrl('${ical.id}')" class="text-red-500">🗑️</button>`;
-                icalListEl.appendChild(div);
-            });
-        }
-        document.getElementById('url-count').textContent = icalUrls.length;
-        document.getElementById('loading-urls').style.display = 'none';
-
-    } catch (error) {
-        console.error("Errore nel caricamento degli URL iCal:", error);
-        icalListEl.innerHTML = '<p class="text-xs text-red-500">Errore nel caricamento dei calendari.</p>';
-        document.getElementById('loading-urls').style.display = 'none';
-    }
-}
-
-// Salva un nuovo URL iCal
-async function saveIcalUrl(name, url) {
-    if (!userId) {
-        showModal("Login richiesto", "Per salvare i calendari, devi prima effettuare il login.");
-        return;
-    }
-
-    try {
-        const colRef = collection(db, "users", userId, "icalUrls");
-        await addDoc(colRef, { name, url });
-        showModal("Calendario aggiunto", "Il calendario è stato salvato correttamente.");
-        await loadIcalUrls();
-    } catch (error) {
-        console.error("Errore nel salvataggio dell'URL iCal:", error);
-        showModal("Errore", "Si è verificato un errore nel salvataggio del calendario.");
-    }
-}
-
-// Elimina un URL iCal
-window.deleteIcalUrl = async (id) => {
-    if (!userId) {
-        showModal("Login richiesto", "Non sei autenticato.");
-        return;
-    }
-    try {
-        const docRef = doc(db, "users", userId, "icalUrls", id);
-        await deleteDoc(docRef);
-        showModal("Calendario eliminato", "Il calendario è stato rimosso.");
-        await loadIcalUrls();
-    } catch (error) {
-        console.error("Errore nella cancellazione dell'URL iCal:", error);
-        showModal("Errore", "Impossibile eliminare il calendario.");
-    }
-};
-// --- SCARICA I FILE .ICS E POPOLA LE PRENOTAZIONI ---
-async function syncCalendars() {
-    if (!userId) {
-        showModal("Login richiesto", "Devi effettuare il login per sincronizzare i calendari.");
-        return;
-    }
-
-    if (!icalUrls || icalUrls.length === 0) {
-        showModal("Nessun calendario", "Non ci sono calendari da sincronizzare. Aggiungi almeno un URL iCal.");
-        return;
-    }
-
-    syncButton.textContent = "Sincronizzo...";
-    syncButton.disabled = true;
-
-    allReservations = [];
-
-    const ICAL_PROXY_URL = "https://corsproxy.io/?";
-
-    for (const ical of icalUrls) {
-        try {
-            let fetchUrl = (ical.url || "").trim();
-
-            // Se l’URL è in formato webcal:// lo trasformiamo in https://
-            if (fetchUrl.startsWith("webcal://")) {
-                fetchUrl = "https://" + fetchUrl.slice("webcal://".length);
-            }
-
-            // Aggiungiamo sempre il proxy per evitare problemi di CORS
-            if (!fetchUrl.startsWith(ICAL_PROXY_URL)) {
-                fetchUrl = ICAL_PROXY_URL + fetchUrl;
-            }
-
-            const response = await fetch(fetchUrl);
-            if (!response.ok) {
-                console.error(`Errore nel fetch del calendario ${ical.name}`, response.status);
-                continue;
-            }
-
-            const txt = await response.text();
-
-            // DEBUG opzionale: vedi cosa arriva
-            // console.log("ICS", ical.name, txt.slice(0, 500));
-
-            const events = parseIcalContent(txt, ical.name);
-            console.log(`Trovati ${events.length} eventi per`, ical.name);
-            allReservations.push(...events);
-        } catch (e) { 
-            console.error(`Errore caricamento ${ical.name}:`, e); 
-        }
-    }
-    
-    syncButton.textContent = "Sincronizza Ora";
-    syncButton.disabled = false;
-    
-    // Resetta sempre su oggi dopo il caricamento e aggiorna la vista
-    currentStartDate = new Date();
-    currentStartDate.setHours(0, 0, 0, 0);
-    renderCalendar();
-    
-    if (allReservations.length > 0) {
-        showModal("Successo", `Caricate ${allReservations.length} prenotazioni.`);
-    } else {
-        showModal("Nessuna prenotazione trovata", "Non sono state trovate prenotazioni nei calendari caricati.");
-    }
-}
-
-// --- RENDER DEL CALENDARIO ORIZZONTALE CON BLOCCHI UNIFICATI ---
-const renderCalendar = () => {
-    const gridEl = document.getElementById('calendar-grid');
-    gridEl.innerHTML = '';
-    gridEl.style.display = 'flex'; // Importante per orizzontale
-
-    // Titolo periodo
-    const endPeriod = new Date(currentStartDate);
-    endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
-    document.getElementById('current-period').textContent = 
-        `${currentStartDate.toLocaleDateString('it-IT')} - ${endPeriod.toLocaleDateString('it-IT')}`;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Mappa per associare il timestamp del giorno alla sua posizione (indice)
-    const daysMap = new Map();
-
-    // --- 1. Genera i contenitori dei giorni (colonne) ---
-    for (let i = 0; i < VIEW_DAYS; i++) {
-        const date = new Date(currentStartDate);
-        date.setDate(date.getDate() + i);
-
-        // Mappa ogni timestamp del giorno all'indice del giorno (i)
-        daysMap.set(date.getTime(), i); 
-
-        const isToday = date.getTime() === today.getTime();
-        const dayName = date.toLocaleDateString('it-IT', { weekday: 'short' });
-
-        const col = document.createElement('div');
-        // Aggiungiamo la classe 'is-today' per l'highlight
-        col.className = `day-column ${isToday ? 'bg-blue-50 is-today' : ''}`;
-
-        col.innerHTML = `
-            <div class="day-label">${dayName}</div>
-            <div class="day-number">${date.getDate()}</div>
-            <hr class="my-2">
-            <div class="reservation-container" id="res-container-${date.getTime()}">
-                </div>
-        `;
-
-        gridEl.appendChild(col);
-    } // Chiudi il ciclo dei giorni
-
-
-    // --- 2. Logica di Disegno delle Prenotazioni con Lanes Dinamici (evita sovrapposizioni) ---
-    
-    if (allReservations.length === 0) {
-        return;
-    }
-
-    // 1. Calcolo dinamico dei "lane" (righe) in base alle sovrapposizioni delle date
-    const lanes = [];
-
-    // Creiamo una copia ordinata per data di inizio
-    const sortedReservations = [...allReservations].sort((a, b) => a.start - b.start);
-
-    sortedReservations.forEach(res => {
-        let assignedLane = -1;
-
-        for (let i = 0; i < lanes.length; i++) {
-            const laneReservations = lanes[i];
-
-            // Verifica se questa prenotazione si sovrappone con qualcuna nel lane
-            const overlaps = laneReservations.some(r => {
-                // Non c'è sovrapposizione solo se una finisce prima che l'altra inizi
-                return !(res.end < r.start || res.start > r.end);
-            });
-
-            if (!overlaps) {
-                assignedLane = i;
-                laneReservations.push(res);
-                break;
-            }
-        }
-
-        // Se non abbiamo trovato un lane libero, ne creiamo uno nuovo
-        if (assignedLane === -1) {
-            assignedLane = lanes.length;
-            lanes.push([res]);
-        }
-
-        // Salviamo il lane sulla prenotazione
-        res.laneIndex = assignedLane;
-    });
-
-    const totalLanes = lanes.length;
-
-    // 2. Disegno delle barre delle prenotazioni nella finestra visibile
-    const firstVisibleTime = currentStartDate.getTime();
-    const lastVisibleDate = new Date(currentStartDate);
-    lastVisibleDate.setDate(lastVisibleDate.getDate() + VIEW_DAYS - 1);
-    const lastVisibleTime = lastVisibleDate.getTime();
-
-    const oneDayMs = 24 * 60 * 60 * 1000;
-
-    sortedReservations.forEach(res => {
-        const startTime = res.start.getTime();
-        const endTime = res.end.getTime();
-
-        // Se completamente fuori dalla finestra visibile, salta
-        if (endTime < firstVisibleTime || startTime > lastVisibleTime) {
+        if (!icalUrls || icalUrls.length === 0) {
+            showModal("Nessun calendario", "Aggiungi almeno un URL iCal.");
             return;
         }
 
-        // Limitiamo l'intervallo alla finestra visibile
-        const clampedStart = Math.max(startTime, firstVisibleTime);
-        const clampedEnd = Math.min(endTime, lastVisibleTime);
-
-        const startIndex = Math.floor((clampedStart - firstVisibleTime) / oneDayMs);
-        const endIndex = Math.floor((clampedEnd - firstVisibleTime) / oneDayMs);
-        const durationDays = Math.max(1, endIndex - startIndex + 1);
-
-        const lane = res.laneIndex;
-
-        // Contenitore del primo giorno visibile della prenotazione
-        const dateOfFirstVisibleDay = new Date(currentStartDate);
-        dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
-        const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
-
-        if (!resContainer) {
-            return;
-        }
-
-        const div = document.createElement('div');
-
-        const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
-        const colorClass = colors[lane % colors.length];
-
-        const columnWidth = 160;
-        const totalWidth = (columnWidth * durationDays) - 1;
-
-const checkoutDate = res.checkout
-    ? res.checkout
-    : new Date(res.end.getTime());
-
-const tooltipText = `Appartamento: ${res.apartmentName}\n` +
-    `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
-    `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
-    `Riepilogo: ${res.summary}`;
-
-        div.style.width = `${totalWidth}px`;
-        div.style.position = 'absolute';
-        div.style.zIndex = 10 + lane;
-        div.style.marginLeft = `0px`;
-
-// Ogni lane è una “riga” di prenotazioni, una sotto l’altra
-const LANE_HEIGHT = 42;           // distanza verticale tra una riga e l’altra
-
-div.style.position = 'absolute';
-div.style.zIndex = 10 + lane;
-div.style.marginLeft = `0px`;
-
-// Niente HEADER_OFFSET: partiamo dall’inizio del contenitore
-div.style.top = `${lane * LANE_HEIGHT}px`;
-
-
-        div.className = `reservation text-white font-semibold ${colorClass} text-center`;
-        div.textContent = res.apartmentName;
-        div.title = tooltipText;
-
-        resContainer.appendChild(div);
-    });
-
-    // 3. Forzare l'altezza minima delle colonne in base al numero di lane
-    const BASE_HEIGHT = 80; // Altezza intestazione
-    const LANE_HEIGHT = 42; // Altezza per riga
-    const minRequiredHeight = BASE_HEIGHT + (totalLanes * LANE_HEIGHT) + 20; // 20px di padding finale
-
-    gridEl.style.minHeight = `${minRequiredHeight}px`;
-    document.querySelectorAll('.day-column').forEach(col => {
-        col.style.minHeight = `${minRequiredHeight}px`;
-    });
-
-
-};
-
-// --- LOGICA AUTENTICAZIONE UTENTE ---
-window.signInWithGoogle = async () => {
-    try {
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-    } catch (error) {
-        console.error("Errore di login:", error);
-        showModal("Errore di login", "Si è verificato un errore durante il login con Google.");
-    }
-};
-
-window.signOutUser = async () => {
-    try {
-        await signOut(auth);
-        showModal("Logout effettuato", "Hai effettuato correttamente il logout.");
-        // Resettiamo anche la UI dei calendari
-        icalUrls = [];
-        icalListEl.innerHTML = '<p class="text-xs text-gray-400">Per salvare i calendari, esegui il Login/Registrazione.</p>';
-        document.getElementById('url-count').textContent = '0';
+        syncButton.textContent = "Sincronizzo...";
+        syncButton.disabled = true;
         allReservations = [];
-        renderCalendar(); // Aggiorna per mostrare il calendario vuoto
-    } catch (error) {
-        console.error("Errore di Logout:", error);
-    }
-};
 
-const renderAuthButton = (user) => {
-    const authButtonsEl = document.getElementById('auth-buttons');
-    authButtonsEl.innerHTML = '';
+        for (const ical of icalUrls) {
+            try {
+                let fetchUrl = (ical.url || "").trim();
+                if (!fetchUrl) continue;
 
-    if (user) {
-        const userName = user.displayName || 'Utente';
-        const initials = userName.charAt(0).toUpperCase();
+                if (fetchUrl.startsWith("webcal://")) {
+                    fetchUrl = "https://" + fetchUrl.slice("webcal://".length);
+                }
 
-        const avatar = document.createElement('div');
-        avatar.className = 'h-8 w-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-semibold';
-        avatar.textContent = initials;
+                if (!fetchUrl.startsWith(ICAL_PROXY_URL)) {
+                    fetchUrl = ICAL_PROXY_URL + fetchUrl;
+                }
 
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'text-xs text-gray-700';
-        nameSpan.textContent = userName;
-
-        const logoutBtn = document.createElement('button');
-        logoutBtn.className = 'text-xs px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200';
-        logoutBtn.textContent = 'Logout';
-        logoutBtn.onclick = () => window.signOutUser();
-
-        authButtonsEl.appendChild(avatar);
-        authButtonsEl.appendChild(nameSpan);
-        authButtonsEl.appendChild(logoutBtn);
-    } else {
-        const loginBtn = document.createElement('button');
-        loginBtn.className = 'inline-flex items-center px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-sm';
-        loginBtn.innerHTML = '<span class="mr-1">🔑</span> Login con Google';
-        loginBtn.onclick = () => window.signInWithGoogle();
-
-        authButtonsEl.appendChild(loginBtn);
-    }
-};
-
-
-// --- INIZIALIZZAZIONE FIREBASE E LISTENER DI STATO UTENTE ---
-(async () => {
-    try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-
-        // Se abbiamo un token di autenticazione lato server, facciamo signInWithCustomToken
-        if (initialAuthToken) {
-            await signInWithCustomToken(auth, initialAuthToken);
-        } else {
-            // NON USIAMO signInAnonymously: attendiamo il login
+                const response = await fetch(fetchUrl);
+                if (!response.ok) {
+                    console.error("Errore nel fetch del calendario", ical.name, response.status);
+                    continue;
+                }
+                const txt = await response.text();
+                const events = parseIcalContent(txt, ical.name);
+                allReservations.push(...events);
+            } catch (e) {
+                console.error(`Errore caricamento ${ical.name}:`, e);
+            }
         }
-        
-        onAuthStateChanged(auth, u => {
-            userId = null; // Resetta l'ID
-            if(u) {
-                userId = u.uid;
-                // Solo se non è anonimo carichiamo i dati
-                if (!u.isAnonymous) {
+
+        syncButton.textContent = "Sincronizza Ora";
+        syncButton.disabled = false;
+
+        currentStartDate = new Date();
+        currentStartDate.setHours(0, 0, 0, 0);
+        renderCalendar();
+
+        if (allReservations.length > 0) {
+            showModal("Successo", `Caricate ${allReservations.length} prenotazioni.`);
+        } else {
+            showModal("Nessuna prenotazione trovata",
+                "Non sono state trovate prenotazioni nei calendari caricati.");
+        }
+    }
+
+    // --- RENDER CALENDARIO ORIZZONTALE ---
+    function renderCalendar() {
+        const gridEl = document.getElementById("calendar-grid");
+        gridEl.innerHTML = "";
+        gridEl.style.display = "flex";
+        document.getElementById("calendar-placeholder")?.remove();
+
+        const endPeriod = new Date(currentStartDate);
+        endPeriod.setDate(endPeriod.getDate() + VIEW_DAYS - 1);
+        document.getElementById("current-period").textContent =
+            `${currentStartDate.toLocaleDateString("it-IT")} - ${endPeriod.toLocaleDateString("it-IT")}`;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Mappa giorno -> indice
+        const daysMap = new Map();
+
+        for (let i = 0; i < VIEW_DAYS; i++) {
+            const date = new Date(currentStartDate);
+            date.setDate(date.getDate() + i);
+            date.setHours(0, 0, 0, 0);
+
+            const ts = date.getTime();
+            daysMap.set(ts, i);
+
+            const isToday = ts === today.getTime();
+            const dayName = date.toLocaleDateString("it-IT", { weekday: "short" });
+
+            const col = document.createElement("div");
+            col.className = `day-column ${isToday ? "bg-blue-50 is-today" : ""}`;
+            col.innerHTML = `
+                <div class="day-label">${dayName}</div>
+                <div class="day-number">${date.getDate()}</div>
+                <hr class="my-1">
+                <div class="reservation-container" id="res-container-${ts}"></div>
+            `;
+            gridEl.appendChild(col);
+        }
+
+        if (allReservations.length === 0) {
+            return;
+        }
+
+        // --- Lanes per evitare sovrapposizioni ---
+        const lanes = [];
+        const sortedReservations = [...allReservations].sort((a, b) => a.start - b.start);
+
+        sortedReservations.forEach(res => {
+            let assignedLane = -1;
+            for (let i = 0; i < lanes.length; i++) {
+                const laneReservations = lanes[i];
+                const overlaps = laneReservations.some(r =>
+                    !(res.end < r.start || res.start > r.end)
+                );
+                if (!overlaps) {
+                    assignedLane = i;
+                    laneReservations.push(res);
+                    break;
+                }
+            }
+            if (assignedLane === -1) {
+                assignedLane = lanes.length;
+                lanes.push([res]);
+            }
+            res.laneIndex = assignedLane;
+        });
+
+        const totalLanes = lanes.length;
+        const BASE_HEIGHT = 80;
+        const LANE_HEIGHT = 42;
+
+        Array.from(gridEl.children).forEach(col => {
+            const container = col.querySelector(".reservation-container");
+            if (container) {
+                const minHeight = BASE_HEIGHT + totalLanes * LANE_HEIGHT;
+                container.style.minHeight = `${minHeight}px`;
+            }
+        });
+
+        // --- Disegno effettivo barre ---
+        const firstVisibleTime = currentStartDate.getTime();
+        const lastVisibleDate = new Date(currentStartDate);
+        lastVisibleDate.setDate(lastVisibleDate.getDate() + VIEW_DAYS - 1);
+        const lastVisibleTime = lastVisibleDate.getTime();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+
+        sortedReservations.forEach(res => {
+            const startTime = res.start.getTime();
+            const endTime = res.end.getTime();
+
+            if (endTime < firstVisibleTime || startTime > lastVisibleTime) {
+                return;
+            }
+
+            const clampedStart = Math.max(startTime, firstVisibleTime);
+            const clampedEnd = Math.min(endTime, lastVisibleTime);
+
+            const startIndex = Math.floor((clampedStart - firstVisibleTime) / oneDayMs);
+            const endIndex = Math.floor((clampedEnd - firstVisibleTime) / oneDayMs);
+            const durationDays = Math.max(1, endIndex - startIndex + 1);
+
+            const lane = res.laneIndex;
+
+            const dateOfFirstVisibleDay = new Date(currentStartDate);
+            dateOfFirstVisibleDay.setDate(dateOfFirstVisibleDay.getDate() + startIndex);
+            dateOfFirstVisibleDay.setHours(0, 0, 0, 0);
+            const resContainer = document.getElementById(`res-container-${dateOfFirstVisibleDay.getTime()}`);
+            if (!resContainer) return;
+
+            const div = document.createElement("div");
+
+            const colors = [
+                "bg-red-500",
+                "bg-green-500",
+                "bg-indigo-500",
+                "bg-yellow-500",
+                "bg-purple-500",
+                "bg-teal-500",
+                "bg-orange-500",
+                "bg-pink-500"
+            ];
+            const colorClass = colors[lane % colors.length];
+
+            const columnWidth = 160;
+            const totalWidth = columnWidth * durationDays - 1;
+
+            const checkoutDate = new Date(res.end.getTime());
+            checkoutDate.setDate(checkoutDate.getDate() + 1);  // giorno reale di check-out
+
+            const tooltipText =
+                `Appartamento: ${res.apartmentName}\n` +
+                `Check-in: ${res.start.toLocaleDateString("it-IT")}\n` +
+                `Check-out: ${checkoutDate.toLocaleDateString("it-IT")}\n` +
+                `Riepilogo: ${res.summary}`;
+
+            div.style.width = `${totalWidth}px`;
+            div.style.position = "absolute";
+            div.style.zIndex = 10 + lane;
+            div.style.marginLeft = "0px";
+            div.style.top = `${lane * LANE_HEIGHT}px`;
+
+            div.className = `reservation text-white font-semibold text-center ${colorClass}`;
+            div.textContent = res.apartmentName;
+            div.title = tooltipText;
+
+            resContainer.appendChild(div);
+        });
+    }
+
+    // --- AUTH UI ---
+    function renderAuthButton(user) {
+        const authButtonsEl = document.getElementById("auth-buttons");
+        authButtonsEl.innerHTML = "";
+
+        if (user) {
+            const userName = user.displayName || "Utente";
+            const initials = userName
+                .split(" ")
+                .map(p => p[0])
+                .join("")
+                .substring(0, 2)
+                .toUpperCase();
+
+            const avatar = document.createElement("div");
+            avatar.className =
+                "h-8 w-8 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-semibold";
+            avatar.textContent = initials;
+
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "text-xs text-gray-700";
+            nameSpan.textContent = userName;
+
+            const logoutBtn = document.createElement("button");
+            logoutBtn.className =
+                "text-xs px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200";
+            logoutBtn.textContent = "Logout";
+            logoutBtn.onclick = () => window.signOutUser();
+
+            authButtonsEl.appendChild(avatar);
+            authButtonsEl.appendChild(nameSpan);
+            authButtonsEl.appendChild(logoutBtn);
+        } else {
+            const loginBtn = document.createElement("button");
+            loginBtn.className =
+                "inline-flex items-center px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-sm";
+            loginBtn.innerHTML = '<span class="mr-1">🔑</span> Login con Google';
+            loginBtn.onclick = () => window.signInWithGoogle();
+
+            authButtonsEl.appendChild(loginBtn);
+        }
+    }
+
+    window.signInWithGoogle = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Errore login Google:", error);
+            showModal("Errore Login", "Impossibile effettuare il login con Google.");
+        }
+    };
+
+    window.signOutUser = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Errore logout:", error);
+        }
+    };
+
+    // --- INIZIALIZZAZIONE FIREBASE ---
+    (async () => {
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            }
+
+            onAuthStateChanged(auth, (u) => {
+                userId = u ? u.uid : null;
+                if (u) {
                     loadIcalUrls();
                 } else {
-                    // Se è anonimo (non dovrebbe succedere se non forzato), mostriamo solo il pulsante di login
-                    icalListEl.innerHTML = '<p class="text-xs text-gray-400">Per salvare i calendari, esegui il Login/Registrazione.</p>';
-                    document.getElementById('url-count').textContent = '0';
-                    document.getElementById('loading-urls').style.display = 'none';
+                    icalUrls = [];
+                    allReservations = [];
+                    icalListEl.innerHTML =
+                        '<p class="text-xs text-gray-400">Per salvare i calendari, esegui il Login/Registrazione.</p>';
+                    document.getElementById("url-count").textContent = "0";
+                    document.getElementById("loading-urls").style.display = "none";
                 }
-            } else {
-                 // Utente disconnesso o anonimo: nascondi i dati e mostra il placeholder
-                 icalUrls = []; 
-                 allReservations = [];
-                 icalListEl.innerHTML = '<p class="text-xs text-gray-400">Per salvare i calendari, esegui il Login/Registrazione.</p>';
-                 document.getElementById('url-count').textContent = '0';
-                 document.getElementById('loading-urls').style.display = 'none';
-            }
-            renderAuthButton(u);
-            renderCalendar(); // Per ridisegnare eventualmente il calendario (senza prenotazioni)
-        });
+                renderAuthButton(u);
+                renderCalendar();
+            });
 
-        console.log("Firebase inizializzato.");
-    } catch (error) {
-        console.error("Errore inizializzazione Firebase:", error);
-        showModal("Errore Firebase", "Impossibile inizializzare il backend. Controlla la configurazione.");
-    }
-})();
+            console.log("Firebase inizializzato.");
+        } catch (error) {
+            console.error("Errore inizializzazione Firebase:", error);
+            showModal(
+                "Errore Firebase",
+                "Impossibile inizializzare il backend. Controlla la configurazione."
+            );
+        }
+    })();
 
+    // --- EVENTI UI ---
+    document.getElementById("add-ical-btn").addEventListener("click", async () => {
+        const nameInput = document.getElementById("ical-name");
+        const urlInput = document.getElementById("ical-url");
+        const name = (nameInput.value || "").trim();
+        const url = (urlInput.value || "").trim();
 
-// --- EVENTI UI ---
-document.getElementById('add-ical-btn').addEventListener('click', async () => {
-    const nameInput = document.getElementById('ical-name');
-    const urlInput = document.getElementById('ical-url');
+        if (!name || !url) {
+            showModal("Dati mancanti", "Inserisci sia il nome che l'URL del calendario.");
+            return;
+        }
+        await saveIcalUrl(name, url);
+        nameInput.value = "";
+        urlInput.value = "";
+    });
 
-    const name = (nameInput.value || '').trim();
-    const url = (urlInput.value || '').trim();
+    syncButton.addEventListener("click", () => {
+        syncCalendars();
+    });
 
-    if (!name || !url) {
-        showModal("Dati mancanti", "Inserisci sia il nome che l'URL del calendario.");
-        return;
-    }
+    document.getElementById("prev-period").addEventListener("click", () => {
+        currentStartDate.setDate(currentStartDate.getDate() - VIEW_DAYS);
+        renderCalendar();
+    });
 
-    await saveIcalUrl(name, url);
-    nameInput.value = '';
-    urlInput.value = '';
-});
+    document.getElementById("next-period").addEventListener("click", () => {
+        currentStartDate.setDate(currentStartDate.getDate() + VIEW_DAYS);
+        renderCalendar();
+    });
 
-syncButton.addEventListener('click', () => {
-    syncCalendars();
-});
+    document.getElementById("today-btn").addEventListener("click", () => {
+        currentStartDate = new Date();
+        currentStartDate.setHours(0, 0, 0, 0);
+        renderCalendar();
+    });
 
-document.getElementById('prev-period').addEventListener('click', () => {
-    currentStartDate.setDate(currentStartDate.getDate() - VIEW_DAYS);
+    // Primo render (vuoto)
     renderCalendar();
-});
-
-document.getElementById('next-period').addEventListener('click', () => {
-    currentStartDate.setDate(currentStartDate.getDate() + VIEW_DAYS);
-    renderCalendar();
-});
-
-document.getElementById('today-btn').addEventListener('click', () => {
-    currentStartDate = new Date();
-    currentStartDate.setHours(0, 0, 0, 0);
-    renderCalendar();
-});
-
-// Primo render (a vuoto)
-renderCalendar();
-
 </script>
 
 </body>
 </html>
+
 
 
 
