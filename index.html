@@ -663,10 +663,14 @@ const renderCalendar = () => {
         const columnWidth = 160;
         const totalWidth = (columnWidth * durationDays) - 1;
 
-        const checkoutDate = new Date(res.end.getTime());
-        checkoutDate.setDate(checkoutDate.getDate() + 1);
+const checkoutDate = res.checkout
+    ? res.checkout
+    : new Date(res.end.getTime());
 
-        const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
+const tooltipText = `Appartamento: ${res.apartmentName}\n` +
+    `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
+    `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
+    `Riepilogo: ${res.summary}`;
 
         div.style.width = `${totalWidth}px`;
         div.style.position = 'absolute';
@@ -857,6 +861,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
