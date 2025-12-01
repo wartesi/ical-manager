@@ -446,7 +446,7 @@ const renderCalendar = () => {
                 const colorClass = colors[lane % colors.length];
 
                 const columnWidth = 140; 
-                const totalWidth = (columnWidth * durationDays) - 1; 
+                const totalWidth = (columnWidth * durationDays); 
 
                 // Calcola la data di checkout reale (Fine + 1 giorno) per il tooltip
                 const checkoutDate = new Date(res.end.getTime()); 
@@ -575,6 +575,7 @@ const renderCalendar = () => {
 </html>
 </body>
 </html>
+
 
 
 
