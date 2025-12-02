@@ -31,7 +31,7 @@
         /* Colonna del giorno nello scheduler orizzontale */
         .day-column {
             display: inline-block;
-            width: 1400px; /* Larghezza fissa di ogni giorno */
+            width: 600px; /* Larghezza fissa di ogni giorno */
             box-sizing: border-box;
             border-right: 1px solid #e5e7eb;
             position: relative;
@@ -644,7 +644,7 @@ const renderCalendar = () => {
         const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
         const colorClass = colors[lane % colors.length];
 
-        const columnWidth =1400;
+        const columnWidth =600;
         const totalWidth = (columnWidth * durationDays) - 1;
 
 const checkoutDate = res.checkout
@@ -850,6 +850,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
