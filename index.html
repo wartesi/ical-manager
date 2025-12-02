@@ -31,7 +31,7 @@
         /* Colonna del giorno nello scheduler orizzontale */
         .day-column {
             display: inline-block;
-            width: 600px; /* Larghezza fissa di ogni giorno */
+            width: 160px; /* Larghezza fissa di ogni giorno */
             box-sizing: border-box;
             border-right: 1px solid #e5e7eb;
             position: relative;
@@ -261,7 +261,7 @@
         // Impostazioni Calendario Orizzontale
         let currentStartDate = new Date();
         currentStartDate.setHours(0, 0, 0, 0); // Start oggi mezzanotte
-        const VIEW_DAYS = 45; // Mostra 45 giorni
+        const VIEW_DAYS = 365; // Mostra 45 giorni
         
         // Configurazione Firebase (SOSTITUISCI CON LE TUE CHIAVI)
 const firebaseConfig = {
@@ -291,81 +291,82 @@ const firebaseConfig = {
         };
 
         // Parsing semplice di un file iCal per estrarre eventi (start, end, summary)
-// Parsing iCal (semplificato) per eventi VEVENT
-// Parsing iCal (semplificato) per eventi VEVENT
+// Parsing iCal (molto semplificato) per eventi VEVENT
 function parseIcalContent(icalText, calendarName) {
     const lines = icalText.split(/\r?\n/);
     let currentEvent = null;
     const events = [];
 
-    // Converte qualsiasi valore tipo:
-    //  - 20251205
-    //  - 20251205T100000Z
-    // in una Date alla mezzanotte locale del giorno (solo data)
-    const parseDateOnly = (val) => {
+    const parseDate = (val) => {
+        // Gestisce sia FORMATO con 'T' che senza (solo data)
+        // Esempi tipici: 20250125, 20250125T120000Z
         if (!val) return null;
+
+        // Rimuove eventuale suffisso 'Z'
         val = val.replace('Z', '');
 
-        const datePart = val.split('T')[0]; // YYYYMMDD
-        if (datePart.length < 8) return null;
-
-        const year  = parseInt(datePart.slice(0, 4), 10);
-        const month = parseInt(datePart.slice(4, 6), 10) - 1;
-        const day   = parseInt(datePart.slice(6, 8), 10);
-
-        const d = new Date(year, month, day);
-        d.setHours(0, 0, 0, 0);
-        return d;
+        // Se contiene 'T' => data e ora
+        if (val.includes('T')) {
+            const year  = parseInt(val.slice(0,4), 10);
+            const month = parseInt(val.slice(4,6), 10) - 1;
+            const day   = parseInt(val.slice(6,8), 10);
+            const hour  = parseInt(val.slice(9,11), 10);
+            const min   = parseInt(val.slice(11,13), 10) || 0;
+            const sec   = parseInt(val.slice(13,15), 10) || 0;
+            return new Date(year, month, day, hour, min, sec);
+        } else {
+            // Solo data
+            const year  = parseInt(val.slice(0,4), 10);
+            const month = parseInt(val.slice(4,6), 10) - 1;
+            const day   = parseInt(val.slice(6,8), 10);
+            return new Date(year, month, day);
+        }
     };
 
     for (let line of lines) {
         line = line.trim();
-
         if (line === 'BEGIN:VEVENT') {
             currentEvent = {};
-
         } else if (line === 'END:VEVENT') {
             if (currentEvent && currentEvent.start && currentEvent.end) {
+                // Ignoriamo eventi che non hanno date valide
                 events.push({
-                    start: currentEvent.start,               // giorno di check-in
-                    end: currentEvent.end,                   // ultima notte occupata
-                    checkout: currentEvent.checkout || null, // giorno di check-out reale
+                    start: currentEvent.start,
+                    end: currentEvent.end,
                     summary: currentEvent.summary || '',
                     apartmentName: calendarName
                 });
             }
             currentEvent = null;
-
         } else if (currentEvent) {
             if (line.startsWith('DTSTART')) {
                 const parts = line.split(':');
                 const val = parts[1];
-                currentEvent.start = parseDateOnly(val);
-
+                currentEvent.start = parseDate(val);
             } else if (line.startsWith('DTEND')) {
-                const parts = line.split(':');
-                const val = parts[1];
+        const parts = line.split(':');
+        const val = parts[1];
 
-                // DTEND = giorno di check-out (come visto su Airbnb)
-                const checkout = parseDateOnly(val);
-                if (!checkout) continue;
+        let endDate = parseDate(val);
 
-                // Ultima notte = giorno prima del check-out
-                const lastNight = new Date(checkout.getTime());
-                lastNight.setDate(lastNight.getDate() - 1);
+        // Se DTEND è solo data (formato tipo 20251205, come negli iCal Airbnb),
+        // significa che è il giorno di CHECK-OUT (non incluso nell'occupazione).
+        // Per il grafico vogliamo l'ultima notte, quindi usiamo il giorno prima.
+        if (val && !val.includes('T')) {
+            endDate.setDate(endDate.getDate() - 1);
+        }
 
-                currentEvent.end = lastNight;    // per disegnare la barra
-                currentEvent.checkout = checkout; // per il tooltip
-
+        currentEvent.end = endDate;
             } else if (line.startsWith('SUMMARY')) {
                 const parts = line.split(':');
-                currentEvent.summary = parts.slice(1).join(':') || '';
+                currentEvent.summary = parts[1] || '';
             }
         }
     }
-
     return events;
 }
+
+
 // --- FUNZIONI FIRESTORE PER GESTIONE URL ICAL ---
 
 // Carica gli URL iCal dell'utente loggato
@@ -639,60 +640,38 @@ const renderCalendar = () => {
             return;
         }
 
-const div = document.createElement('div');
+        const div = document.createElement('div');
 
-const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
-const colorClass = colors[lane % colors.length];
+        const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+        const colorClass = colors[lane % colors.length];
 
-// larghezza effettiva di UNA colonna (uguale alla .day-column nel CSS)
-const columnWidth = 600;
+        const columnWidth = 160;
+        const totalWidth = (columnWidth * durationDays) - 1;
 
-// quanto spazio vogliamo lasciare “vuoto” tra una prenotazione e l’altra (in pixel)
-const BAR_GAP = 10;
+        const checkoutDate = new Date(res.end.getTime());
+        checkoutDate.setDate(checkoutDate.getDate() + 1);
 
-// la barra è un po’ più corta della somma delle colonne:
-// es: 1 giorno -> 600 - 10 = 590px, 3 giorni -> 1800 - 10 = 1790px
-const totalWidth = (columnWidth * durationDays) - BAR_GAP;
+        const tooltipText = `Appartamento: ${res.apartmentName}\nCheck-in: ${res.start.toLocaleDateString('it-IT')}\nCheck-out: ${checkoutDate.toLocaleDateString('it-IT')}\nRiepilogo: ${res.summary}`;
 
-const checkoutDate = res.checkout
-    ? res.checkout
-    : (() => {
-        const d = new Date(res.end.getTime());
-        d.setDate(d.getDate() + 1);
-        return d;
-      })();
-
-const tooltipText =
-    `Appartamento: ${res.apartmentName}\n` +
-    `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
-    `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
-    `Riepilogo: ${res.summary}`;
-
-// stile della barra
-div.style.width = `${totalWidth}px`;
-div.style.position = 'absolute';
-div.style.zIndex = 10 + lane;
-// lasciamo metà gap all’inizio e metà alla fine → la barra è centrata dentro i giorni
-div.style.marginLeft = `${BAR_GAP / 2}px`;
+        div.style.width = `${totalWidth}px`;
+        div.style.position = 'absolute';
+        div.style.zIndex = 10 + lane;
+        div.style.marginLeft = `0px`;
 
 // Ogni lane è una “riga” di prenotazioni, una sotto l’altra
-const LANE_HEIGHT = 42;
+const LANE_HEIGHT = 42;           // distanza verticale tra una riga e l’altra
+
+div.style.position = 'absolute';
+div.style.zIndex = 10 + lane;
+div.style.marginLeft = `0px`;
+
+// Niente HEADER_OFFSET: partiamo dall’inizio del contenitore
 div.style.top = `${lane * LANE_HEIGHT}px`;
 
 
-const checkoutDate = res.checkout
-    ? res.checkout
-    : new Date(res.end.getTime() + 24*60*60*1000);
-
-const tooltipText =
-    `Appartamento: ${res.apartmentName}\n` +
-    `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
-    `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
-    `Riepilogo: ${res.summary}`;
-
         div.className = `reservation text-white font-semibold ${colorClass} text-center`;
         div.textContent = res.apartmentName;
-        div.title = "";
+        div.title = tooltipText;
 
         resContainer.appendChild(div);
     });
@@ -863,6 +842,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
