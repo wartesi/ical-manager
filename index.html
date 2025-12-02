@@ -648,7 +648,7 @@ const checkoutDate = res.checkout
     ? res.checkout
     : (() => {
         const d = new Date(res.end.getTime());
-        d.setDate(d.getDate());
+        d.setDate(d.getDate() + 1);
         return d;
       })();
 
@@ -847,6 +847,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
