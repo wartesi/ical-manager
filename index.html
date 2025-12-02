@@ -659,7 +659,15 @@ div.style.left = '0px';
 const LANE_HEIGHT = 42;
 div.style.top = `${lane * LANE_HEIGHT}px`;
 
+const checkoutDate = res.checkout
+    ? res.checkout
+    : new Date(res.end.getTime() + 24*60*60*1000);
 
+const tooltipText =
+    `Appartamento: ${res.apartmentName}\n` +
+    `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
+    `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
+    `Riepilogo: ${res.summary}`;
 
         div.className = `reservation text-white font-semibold ${colorClass} text-center`;
         div.textContent = res.apartmentName;
@@ -834,6 +842,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
