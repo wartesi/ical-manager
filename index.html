@@ -291,92 +291,78 @@ const firebaseConfig = {
         };
 
         // Parsing semplice di un file iCal per estrarre eventi (start, end, summary)
-// Parsing iCal (molto semplificato) per eventi VEVENT
+// Parsing iCal (semplificato) per eventi VEVENT
 function parseIcalContent(icalText, calendarName) {
     const lines = icalText.split(/\r?\n/);
     let currentEvent = null;
     const events = [];
 
-    const parseDate = (val) => {
-        // Gestisce sia FORMATO con 'T' che senza (solo data)
-        // Esempi tipici: 20250125, 20250125T120000Z
+    // Converte qualsiasi formato tipo 20251205 o 20251205T120000Z
+    // nel solo giorno (YYYYMMDD) a mezzanotte.
+    const parseDateOnly = (val) => {
         if (!val) return null;
-
-        // Rimuove eventuale suffisso 'Z'
         val = val.replace('Z', '');
 
-        // Se contiene 'T' => data e ora
-        if (val.includes('T')) {
-            const year  = parseInt(val.slice(0,4), 10);
-            const month = parseInt(val.slice(4,6), 10) - 1;
-            const day   = parseInt(val.slice(6,8), 10);
-            const hour  = parseInt(val.slice(9,11), 10);
-            const min   = parseInt(val.slice(11,13), 10) || 0;
-            const sec   = parseInt(val.slice(13,15), 10) || 0;
-            return new Date(year, month, day, hour, min, sec);
-        } else {
-            // Solo data
-            const year  = parseInt(val.slice(0,4), 10);
-            const month = parseInt(val.slice(4,6), 10) - 1;
-            const day   = parseInt(val.slice(6,8), 10);
-            return new Date(year, month, day);
-        }
+        const datePart = val.split('T')[0]; // prende solo YYYYMMDD
+        if (datePart.length < 8) return null;
+
+        const year  = parseInt(datePart.slice(0, 4), 10);
+        const month = parseInt(datePart.slice(4, 6), 10) - 1;
+        const day   = parseInt(datePart.slice(6, 8), 10);
+
+        const d = new Date(year, month, day);
+        d.setHours(0, 0, 0, 0);
+        return d;
     };
 
     for (let line of lines) {
         line = line.trim();
+
         if (line === 'BEGIN:VEVENT') {
             currentEvent = {};
-} else if (line === 'END:VEVENT') {
-    if (currentEvent && currentEvent.start && currentEvent.end) {
-        events.push({
-            start: currentEvent.start,
-            end: currentEvent.end,                   // ultima notte
-            checkout: currentEvent.checkout || null, // giorno di check-out reale (se calcolato)
-            summary: currentEvent.summary || '',
-            apartmentName: calendarName
-        });
-    }
-    currentEvent = null;
-} else if (currentEvent) {
+
+        } else if (line === 'END:VEVENT') {
+            if (currentEvent && currentEvent.start && currentEvent.end) {
+                events.push({
+                    start: currentEvent.start,              // giorno di check-in
+                    end: currentEvent.end,                  // ultima notte occupata
+                    checkout: currentEvent.checkout || null, // giorno di check-out reale (Airbnb)
+                    summary: currentEvent.summary || '',
+                    apartmentName: calendarName
+                });
+            }
+            currentEvent = null;
+
+        } else if (currentEvent) {
             if (line.startsWith('DTSTART')) {
                 const parts = line.split(':');
                 const val = parts[1];
-                currentEvent.start = parseDate(val);
-} else if (line.startsWith('DTEND')) {
-    const parts = line.split(':');
-    const val = parts[1];
+                currentEvent.start = parseDateOnly(val);
 
-    let endDate = parseDate(val);
-    let checkoutDate = null;
-
-    if (val && !val.includes('T')) {
-        // Nei calendari Airbnb DTEND è spesso il giorno DOPO il check-out.
-        // Esempio: check-in 3, check-out 5 -> DTEND = 6.
-        // Allora:
-        //   - check-out reale = DTEND - 1
-        //   - ultima notte occupata = check-out - 1
-
-        checkoutDate = new Date(endDate);         // DTEND
-        checkoutDate.setDate(checkoutDate.getDate() - 1); // giorno di check-out reale
-
-        // fine barra = ultima notte occupata
-        endDate.setDate(endDate.getDate() - 2);
-    }
-
-    currentEvent.end = endDate;
-    currentEvent.checkout = checkoutDate; // la usiamo nel tooltip
-}
-            else if (line.startsWith('SUMMARY')) {
+            } else if (line.startsWith('DTEND')) {
                 const parts = line.split(':');
-                currentEvent.summary = parts[1] || '';
+                const val = parts[1];
+
+                // DTEND lo trattiamo come "giorno di check-out" (come mostra Airbnb)
+                const checkout = parseDateOnly(val);
+                if (!checkout) continue;
+
+                // Ultima notte occupata = giorno prima del check-out
+                const lastNight = new Date(checkout.getTime());
+                lastNight.setDate(lastNight.getDate() - 1);
+
+                currentEvent.end = lastNight;    // per disegnare la barra
+                currentEvent.checkout = checkout; // per il tooltip
+
+            } else if (line.startsWith('SUMMARY')) {
+                const parts = line.split(':');
+                currentEvent.summary = parts.slice(1).join(':') || '';
             }
         }
     }
+
     return events;
 }
-
-
 // --- FUNZIONI FIRESTORE PER GESTIONE URL ICAL ---
 
 // Carica gli URL iCal dell'utente loggato
@@ -861,6 +847,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
