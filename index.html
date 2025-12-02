@@ -644,20 +644,41 @@ const div = document.createElement('div');
 const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
 const colorClass = colors[lane % colors.length];
 
-// Larghezza effettiva di UNA colonna (deve coincidere con .day-column)
+// larghezza effettiva di UNA colonna (uguale alla .day-column nel CSS)
 const columnWidth = 600;
 
-// La barra deve occupare esattamente "durationDays" colonne
-const totalWidth = columnWidth * durationDays;
+// quanto spazio vogliamo lasciare “vuoto” tra una prenotazione e l’altra (in pixel)
+const BAR_GAP = 10;
 
+// la barra è un po’ più corta della somma delle colonne:
+// es: 1 giorno -> 600 - 10 = 590px, 3 giorni -> 1800 - 10 = 1790px
+const totalWidth = (columnWidth * durationDays) - BAR_GAP;
+
+const checkoutDate = res.checkout
+    ? res.checkout
+    : (() => {
+        const d = new Date(res.end.getTime());
+        d.setDate(d.getDate() + 1);
+        return d;
+      })();
+
+const tooltipText =
+    `Appartamento: ${res.apartmentName}\n` +
+    `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
+    `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
+    `Riepilogo: ${res.summary}`;
+
+// stile della barra
 div.style.width = `${totalWidth}px`;
 div.style.position = 'absolute';
 div.style.zIndex = 10 + lane;
-div.style.left = '0px';
+// lasciamo metà gap all’inizio e metà alla fine → la barra è centrata dentro i giorni
+div.style.marginLeft = `${BAR_GAP / 2}px`;
 
 // Ogni lane è una “riga” di prenotazioni, una sotto l’altra
 const LANE_HEIGHT = 42;
 div.style.top = `${lane * LANE_HEIGHT}px`;
+
 
 const checkoutDate = res.checkout
     ? res.checkout
@@ -842,6 +863,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
