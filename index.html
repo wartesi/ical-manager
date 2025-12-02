@@ -639,35 +639,26 @@ const renderCalendar = () => {
             return;
         }
 
-        const div = document.createElement('div');
+const div = document.createElement('div');
 
-        const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
-        const colorClass = colors[lane % colors.length];
+const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+const colorClass = colors[lane % colors.length];
 
-       // Larghezza visiva di una colonna (come nel CSS)
+// Larghezza effettiva di UNA colonna (deve coincidere con .day-column)
 const columnWidth = 600;
 
-// Quanto vuoi “stringere” la barra in totale (px)
-const BAR_PADDING = 20; // prova 20, poi puoi aumentare/diminuire
+// La barra deve occupare esattamente "durationDays" colonne
+const totalWidth = columnWidth * durationDays;
 
-// Larghezza effettiva della barra: un po' più corta della somma delle colonne
-const totalWidth = (columnWidth * durationDays) - BAR_PADDING;
-
-// Spostiamo la barra leggermente verso dentro così resta centrata
 div.style.width = `${totalWidth}px`;
 div.style.position = 'absolute';
 div.style.zIndex = 10 + lane;
-div.style.marginLeft = `${BAR_PADDING / 2}px`;
+div.style.left = '0px';
 
 // Ogni lane è una “riga” di prenotazioni, una sotto l’altra
-const LANE_HEIGHT = 42;           // distanza verticale tra una riga e l’altra
-
-div.style.position = 'absolute';
-div.style.zIndex = 10 + lane;
-div.style.marginLeft = `0px`;
-
-// Niente HEADER_OFFSET: partiamo dall’inizio del contenitore
+const LANE_HEIGHT = 42;
 div.style.top = `${lane * LANE_HEIGHT}px`;
+
 
 
         div.className = `reservation text-white font-semibold ${colorClass} text-center`;
@@ -843,6 +834,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
