@@ -644,27 +644,20 @@ const renderCalendar = () => {
         const colors = ['bg-red-500', 'bg-green-500', 'bg-indigo-500', 'bg-yellow-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
         const colorClass = colors[lane % colors.length];
 
-        const columnWidth =600;
-        const totalWidth = (columnWidth * durationDays) - 1;
+       // Larghezza visiva di una colonna (come nel CSS)
+const columnWidth = 600;
 
-const checkoutDate = res.checkout
-    ? res.checkout
-    : (() => {
-        const d = new Date(res.end.getTime());
-        d.setDate(d.getDate() + 1);
-        return d;
-      })();
+// Quanto vuoi “stringere” la barra in totale (px)
+const BAR_PADDING = 20; // prova 20, poi puoi aumentare/diminuire
 
-const tooltipText =
-    `Appartamento: ${res.apartmentName}\n` +
-    `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
-    `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
-    `Riepilogo: ${res.summary}`;
+// Larghezza effettiva della barra: un po' più corta della somma delle colonne
+const totalWidth = (columnWidth * durationDays) - BAR_PADDING;
 
-        div.style.width = `${totalWidth}px`;
-        div.style.position = 'absolute';
-        div.style.zIndex = 10 + lane;
-        div.style.marginLeft = `0px`;
+// Spostiamo la barra leggermente verso dentro così resta centrata
+div.style.width = `${totalWidth}px`;
+div.style.position = 'absolute';
+div.style.zIndex = 10 + lane;
+div.style.marginLeft = `${BAR_PADDING / 2}px`;
 
 // Ogni lane è una “riga” di prenotazioni, una sotto l’altra
 const LANE_HEIGHT = 42;           // distanza verticale tra una riga e l’altra
@@ -850,6 +843,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
