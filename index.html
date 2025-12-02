@@ -292,18 +292,21 @@ const firebaseConfig = {
 
         // Parsing semplice di un file iCal per estrarre eventi (start, end, summary)
 // Parsing iCal (semplificato) per eventi VEVENT
+// Parsing iCal (semplificato) per eventi VEVENT
 function parseIcalContent(icalText, calendarName) {
     const lines = icalText.split(/\r?\n/);
     let currentEvent = null;
     const events = [];
 
-    // Converte qualsiasi formato tipo 20251205 o 20251205T120000Z
-    // nel solo giorno (YYYYMMDD) a mezzanotte.
+    // Converte qualsiasi valore tipo:
+    //  - 20251205
+    //  - 20251205T100000Z
+    // in una Date alla mezzanotte locale del giorno (solo data)
     const parseDateOnly = (val) => {
         if (!val) return null;
         val = val.replace('Z', '');
 
-        const datePart = val.split('T')[0]; // prende solo YYYYMMDD
+        const datePart = val.split('T')[0]; // YYYYMMDD
         if (datePart.length < 8) return null;
 
         const year  = parseInt(datePart.slice(0, 4), 10);
@@ -324,9 +327,9 @@ function parseIcalContent(icalText, calendarName) {
         } else if (line === 'END:VEVENT') {
             if (currentEvent && currentEvent.start && currentEvent.end) {
                 events.push({
-                    start: currentEvent.start,              // giorno di check-in
-                    end: currentEvent.end,                  // ultima notte occupata
-                    checkout: currentEvent.checkout || null, // giorno di check-out reale (Airbnb)
+                    start: currentEvent.start,               // giorno di check-in
+                    end: currentEvent.end,                   // ultima notte occupata
+                    checkout: currentEvent.checkout || null, // giorno di check-out reale
                     summary: currentEvent.summary || '',
                     apartmentName: calendarName
                 });
@@ -343,11 +346,11 @@ function parseIcalContent(icalText, calendarName) {
                 const parts = line.split(':');
                 const val = parts[1];
 
-                // DTEND lo trattiamo come "giorno di check-out" (come mostra Airbnb)
+                // DTEND = giorno di check-out (come visto su Airbnb)
                 const checkout = parseDateOnly(val);
                 if (!checkout) continue;
 
-                // Ultima notte occupata = giorno prima del check-out
+                // Ultima notte = giorno prima del check-out
                 const lastNight = new Date(checkout.getTime());
                 lastNight.setDate(lastNight.getDate() - 1);
 
@@ -847,6 +850,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
