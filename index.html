@@ -660,9 +660,14 @@ const renderCalendar = () => {
 
 const checkoutDate = res.checkout
     ? res.checkout
-    : new Date(res.end.getTime());
+    : (() => {
+        const d = new Date(res.end.getTime());
+        d.setDate(d.getDate() + 1);
+        return d;
+      })();
 
-const tooltipText = `Appartamento: ${res.apartmentName}\n` +
+const tooltipText =
+    `Appartamento: ${res.apartmentName}\n` +
     `Check-in: ${res.start.toLocaleDateString('it-IT')}\n` +
     `Check-out: ${checkoutDate.toLocaleDateString('it-IT')}\n` +
     `Riepilogo: ${res.summary}`;
@@ -856,6 +861,7 @@ renderCalendar();
 
 </body>
 </html>
+
 
 
 
